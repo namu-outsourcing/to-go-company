@@ -13,6 +13,17 @@
 </head>
 
 <body>
+    <!-- Login Wall -->
+    <div id="login-wall" style="display:none; position:fixed; inset:0; background:linear-gradient(135deg,#eff6ff 0%,#f0fdf4 100%); z-index:9999; flex-direction:column; align-items:center; justify-content:center;">
+        <span class="material-symbols-rounded" style="font-size:4rem; color:var(--primary); margin-bottom:1rem;">cases</span>
+        <h1 style="font-size:2rem; font-weight:700; color:var(--text-main); margin-bottom:0.5rem;">Career Log</h1>
+        <p style="color:var(--text-muted); margin-bottom:2.5rem; font-size:1.05rem;">나만의 취업 준비 공간, 로그인 후 이용하세요.</p>
+        <button class="btn-primary" onclick="app.login()" style="padding:0.9rem 2.5rem; font-size:1.05rem; border-radius:12px; gap:0.6rem;">
+            <span class="material-symbols-rounded">login</span>
+            Google로 시작하기
+        </button>
+    </div>
+
     <div class="app-container">
         <!-- Sidebar -->
         <aside class="sidebar">

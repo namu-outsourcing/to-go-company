@@ -12,13 +12,51 @@ const app = {
     calOffset: 0,
     calViewMode: 'month',
 
+    _eventsBound: false,
+
     async init() {
         await this.checkUser();
-        this.loadStorage();
-        this.bindEvents();
+        if (!this.state.user) {
+            this.showLoginWall();
+            return;
+        }
+        await this.loadFromSupabase();
+        this._initUI();
+    },
+
+    _initUI() {
+        if (!this._eventsBound) {
+            this.bindEvents();
+            this.initCharCounter();
+            this._eventsBound = true;
+        }
         this.renderDashboard();
-        this.initCharCounter();
         this.renderCalendar();
+    },
+
+    showLoginWall() {
+        const wall = document.getElementById('login-wall');
+        wall.style.display = 'flex';
+        document.querySelector('.app-container').style.display = 'none';
+    },
+
+    hideLoginWall() {
+        const wall = document.getElementById('login-wall');
+        wall.style.display = 'none';
+        document.querySelector('.app-container').style.display = '';
+    },
+
+    async loadFromSupabase() {
+        const { data, error } = await supabase
+            .from('user_data')
+            .select('jobs')
+            .eq('user_id', this.state.user.id)
+            .single();
+        if (error && error.code !== 'PGRST116') {
+            console.error('Load error:', error);
+            return;
+        }
+        this.state.jobs = data?.jobs || [];
     },
 
     async checkUser() {
@@ -26,12 +64,16 @@ const app = {
         this.state.user = session?.user ?? null;
         this.updateAuthUI();
 
-        supabase.auth.onAuthStateChange((_event, session) => {
+        supabase.auth.onAuthStateChange(async (_event, session) => {
             this.state.user = session?.user ?? null;
             this.updateAuthUI();
             if (this.state.user) {
-                // If logged in, fetch data from DB (to be implemented)
-                // this.loadFromSupabase(); 
+                this.hideLoginWall();
+                await this.loadFromSupabase();
+                this._initUI();
+            } else {
+                this.state.jobs = [];
+                this.showLoginWall();
             }
         });
     },
@@ -49,7 +91,6 @@ const app = {
     async logout() {
         const { error } = await supabase.auth.signOut();
         if (error) console.error('Logout Error:', error.message);
-        else window.location.reload();
     },
 
     updateAuthUI() {
@@ -76,17 +117,13 @@ const app = {
         }
     },
 
-    loadStorage() {
-        const saved = localStorage.getItem('jobAgentData');
-        if (saved) {
-            try { this.state = JSON.parse(saved); } catch (e) { }
-        } else {
-            this.state.jobs = [];
-            this.saveStorage();
-        }
+    saveStorage() {
+        if (!this.state.user) return;
+        supabase
+            .from('user_data')
+            .upsert({ user_id: this.state.user.id, jobs: this.state.jobs, updated_at: new Date().toISOString() })
+            .then(({ error }) => { if (error) console.error('Save error:', error); });
     },
-
-    saveStorage() { localStorage.setItem('jobAgentData', JSON.stringify(this.state)); },
 
     bindEvents() {
         document.querySelectorAll('.nav-item').forEach(item => {
