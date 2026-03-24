@@ -82,10 +82,57 @@ const app = {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: window.location.origin
+                redirectTo: window.location.origin,
+                scopes: 'https://www.googleapis.com/auth/calendar.events'
             }
         });
         if (error) console.error('Login Error:', error.message);
+    },
+
+    async getGoogleAccessToken() {
+        const { data: { session } } = await supabase.auth.getSession();
+        return session?.provider_token ?? null;
+    },
+
+    async createCalendarEvent(job) {
+        if (!job.deadline || job.deadline === '상시모집') return null;
+        const token = await this.getGoogleAccessToken();
+        if (!token) return null;
+        const event = {
+            summary: `[취준] ${job.company} - ${job.role} 마감`,
+            description: job.sourceUrl ? `채용공고: ${job.sourceUrl}` : '',
+            start: { date: job.deadline },
+            end: { date: job.deadline }
+        };
+        try {
+            const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(event)
+            });
+            const data = await res.json();
+            return data.id ?? null;
+        } catch (e) { console.error('Calendar create error:', e); return null; }
+    },
+
+    async updateCalendarEvent(job) {
+        if (!job.googleEventId) { job.googleEventId = await this.createCalendarEvent(job); return; }
+        if (!job.deadline || job.deadline === '상시모집') return;
+        const token = await this.getGoogleAccessToken();
+        if (!token) return;
+        const event = {
+            summary: `[취준] ${job.company} - ${job.role} 마감`,
+            description: job.sourceUrl ? `채용공고: ${job.sourceUrl}` : '',
+            start: { date: job.deadline },
+            end: { date: job.deadline }
+        };
+        try {
+            await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${job.googleEventId}`, {
+                method: 'PUT',
+                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(event)
+            });
+        } catch (e) { console.error('Calendar update error:', e); }
     },
 
     async logout() {
@@ -329,9 +376,13 @@ const app = {
 
         const newJob = {
             id: Date.now().toString(), company, role, deadline, questions, sourceUrl: this.tempParsedSourceUrl,
-            answers: new Array(questions.length).fill(''), status: 'todo', pdfName: null
+            answers: new Array(questions.length).fill(''), status: 'todo', pdfName: null, googleEventId: null
         };
-        this.state.jobs.push(newJob); this.saveStorage();
+        this.state.jobs.push(newJob);
+        this.createCalendarEvent(newJob).then(eventId => {
+            if (eventId) { newJob.googleEventId = eventId; this.saveStorage(); }
+        });
+        this.saveStorage();
         alert("공고가 성공적으로 등록되었습니다!");
         document.querySelector('.nav-item[data-view="dashboard"]').click();
         document.getElementById('job-url').value = ''; 
@@ -588,6 +639,7 @@ const app = {
         while (job.answers.length < job.questions.length) job.answers.push('');
         if (job.answers.length > job.questions.length) job.answers = job.answers.slice(0, job.questions.length);
 
+        this.updateCalendarEvent(job).then(() => this.saveStorage());
         this.saveStorage(); this.renderDashboard(); this.renderCalendar(); this.showJobModal(job.id);
         if (this.state.editorJobId === job.id) this.openEditor(job.id);
     },
