@@ -81,7 +81,7 @@ const app = {
         if (saved) {
             try { this.state = JSON.parse(saved); } catch (e) { }
         } else {
-            this.state.jobs = [{ id: Date.now().toString(), company: "우아한형제들", role: "프론트엔드 개발자", deadline: new Date(Date.now() + 86400000).toISOString().split('T')[0], status: 'todo', questions: ["지원동기를 작성해주세요.", "가장 큰 성취 경험을 적어주세요."], answers: ["", ""], pdfName: null, sourceUrl: "" }];
+            this.state.jobs = [];
             this.saveStorage();
         }
     },
