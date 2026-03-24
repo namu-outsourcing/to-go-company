@@ -269,6 +269,18 @@
         </div>
     </div>
 
+    <!-- Tutorial Overlay -->
+    <div id="tutorial-overlay" class="hidden">
+        <div class="tutorial-dim" onclick="app.nextTutorialStep()"></div>
+        <div id="tutorial-bubble" class="tutorial-bubble">
+            <p id="tutorial-text" style="margin-bottom:1rem; font-weight:500; line-height:1.6;"></p>
+            <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+                <button class="btn-sm" style="border:none; color:var(--text-muted);" onclick="app.endTutorial()">건너뛰기</button>
+                <button id="tutorial-next" class="btn-primary" style="padding:0.5rem 1rem;" onclick="app.nextTutorialStep()">다음</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="app.js"></script>
 </body>
 

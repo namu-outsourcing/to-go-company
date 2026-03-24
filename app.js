@@ -14,6 +14,14 @@ const app = {
 
     _eventsBound: false,
 
+    tutorialSteps: [
+        { selector: '.nav-item[data-view="dashboard"]', text: "이곳은 대시보드입니다. 전체 채용 일정과 지원 현황을 한눈에 파악할 수 있어요." },
+        { selector: '.nav-item[data-view="add-job"]', text: "공고 등록에서 채용 공고 URL과 내용을 붙여넣으면 AI가 기업명, 직무, 마감일, 자소서 문항을 자동으로 추출해줍니다." },
+        { selector: '.nav-item[data-view="editor"]', text: "자소서 에디터에서 문항별로 자기소개서를 작성하고 AI 맞춤법 검사를 받을 수 있어요." },
+        { selector: '.nav-item[data-view="archive"]', text: "과거 보관함에서 합격/불합격한 지원 기록과 자소서를 다시 꺼내 재활용할 수 있습니다. 이걸로 튜토리얼 끝! 🎉" }
+    ],
+    currentTutorialStep: 0,
+
     async init() {
         await this.checkUser();
         if (!this.state.user) {
@@ -32,6 +40,7 @@ const app = {
         }
         this.renderDashboard();
         this.renderCalendar();
+        setTimeout(() => this.checkTutorial(), 300);
     },
 
     showLoginWall() {
@@ -49,7 +58,7 @@ const app = {
     async loadFromSupabase() {
         const { data, error } = await supabase
             .from('user_data')
-            .select('jobs')
+            .select('jobs, tutorial_completed')
             .eq('user_id', this.state.user.id)
             .single();
         if (error && error.code !== 'PGRST116') {
@@ -57,6 +66,7 @@ const app = {
             return;
         }
         this.state.jobs = data?.jobs || [];
+        this.state.tutorialCompleted = data?.tutorial_completed ?? false;
     },
 
     async checkUser() {
@@ -170,7 +180,7 @@ const app = {
         if (!this.state.user) return;
         supabase
             .from('user_data')
-            .upsert({ user_id: this.state.user.id, jobs: this.state.jobs, updated_at: new Date().toISOString() })
+            .upsert({ user_id: this.state.user.id, jobs: this.state.jobs, tutorial_completed: this.state.tutorialCompleted ?? false, updated_at: new Date().toISOString() })
             .then(({ error }) => { if (error) console.error('Save error:', error); });
     },
 
@@ -800,6 +810,44 @@ const app = {
         const statusLabel = document.getElementById('spell-check-status');
         statusLabel.innerHTML = '<span class="material-symbols-rounded">check_circle</span> 에디터에 성공적으로 반영/저장됨';
         statusLabel.className = 'spell-check-status ideal';
+    },
+
+    checkTutorial() {
+        if (!this.state.tutorialCompleted) this.startTutorial();
+    },
+
+    startTutorial() {
+        this.currentTutorialStep = 0;
+        document.getElementById('tutorial-overlay').classList.remove('hidden');
+        this.showTutorialStep();
+    },
+
+    showTutorialStep() {
+        document.querySelectorAll('.tutorial-highlight').forEach(el => el.classList.remove('tutorial-highlight'));
+        const step = this.tutorialSteps[this.currentTutorialStep];
+        const target = document.querySelector(step.selector);
+        if (!target) return;
+        target.classList.add('tutorial-highlight');
+        const rect = target.getBoundingClientRect();
+        const bubble = document.getElementById('tutorial-bubble');
+        document.getElementById('tutorial-text').innerText = step.text;
+        bubble.style.top = Math.max(10, rect.top - 10) + 'px';
+        bubble.style.left = (rect.right + 25) + 'px';
+        const nextBtn = document.getElementById('tutorial-next');
+        if (nextBtn) nextBtn.innerText = this.currentTutorialStep === this.tutorialSteps.length - 1 ? '완료' : '다음';
+    },
+
+    nextTutorialStep() {
+        this.currentTutorialStep++;
+        if (this.currentTutorialStep >= this.tutorialSteps.length) { this.endTutorial(); return; }
+        this.showTutorialStep();
+    },
+
+    endTutorial() {
+        document.getElementById('tutorial-overlay').classList.add('hidden');
+        document.querySelectorAll('.tutorial-highlight').forEach(el => el.classList.remove('tutorial-highlight'));
+        this.state.tutorialCompleted = true;
+        this.saveStorage();
     },
 
     openImportModal() {
