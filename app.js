@@ -69,8 +69,10 @@ const app = {
             this.updateAuthUI();
             if (this.state.user) {
                 this.hideLoginWall();
-                await this.loadFromSupabase();
-                this._initUI();
+                if (_event === 'SIGNED_IN' || _event === 'INITIAL_SESSION') {
+                    await this.loadFromSupabase();
+                    this._initUI();
+                }
             } else {
                 this.state.jobs = [];
                 this.showLoginWall();
