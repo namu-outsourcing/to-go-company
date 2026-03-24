@@ -1,7 +1,10 @@
+import { supabase } from './supabase.js';
+
 const API_KEY = import.meta.env.VITE_API_KEY;
 
 const app = {
-    state: { jobs: [], editorJobId: null, editorActiveQIndex: 0 },
+    state: { user: null, jobs: [], editorJobId: null, editorActiveQIndex: 0 },
+    // ... rest of existing state
     tempUploadJobId: null,
     currentModalJobId: null,
     tempParsedSourceUrl: "",
@@ -9,12 +12,68 @@ const app = {
     calOffset: 0,
     calViewMode: 'month',
 
-    init() {
+    async init() {
+        await this.checkUser();
         this.loadStorage();
         this.bindEvents();
         this.renderDashboard();
         this.initCharCounter();
         this.renderCalendar();
+    },
+
+    async checkUser() {
+        const { data: { session } } = await supabase.auth.getSession();
+        this.state.user = session?.user ?? null;
+        this.updateAuthUI();
+
+        supabase.auth.onAuthStateChange((_event, session) => {
+            this.state.user = session?.user ?? null;
+            this.updateAuthUI();
+            if (this.state.user) {
+                // If logged in, fetch data from DB (to be implemented)
+                // this.loadFromSupabase(); 
+            }
+        });
+    },
+
+    async login() {
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin
+            }
+        });
+        if (error) console.error('Login Error:', error.message);
+    },
+
+    async logout() {
+        const { error } = await supabase.auth.signOut();
+        if (error) console.error('Logout Error:', error.message);
+        else window.location.reload();
+    },
+
+    updateAuthUI() {
+        const profileArea = document.querySelector('.user-profile');
+        if (!profileArea) return;
+
+        if (this.state.user) {
+            const avatar = this.state.user.user_metadata.avatar_url || '';
+            const name = this.state.user.user_metadata.full_name || '사용자';
+            profileArea.innerHTML = `
+                <div style="display:flex; align-items:center; gap:0.8rem; cursor:pointer;" onclick="app.logout()">
+                    <img src="${avatar}" style="width:32px; height:32px; border-radius:50%; border:2px solid var(--primary);">
+                    <span style="font-weight:600;">${name} 님</span>
+                    <span class="material-symbols-rounded" style="font-size:1.2rem; color:var(--text-muted);">logout</span>
+                </div>
+            `;
+        } else {
+            profileArea.innerHTML = `
+                <button class="btn-primary" onclick="app.login()" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                    <span class="material-symbols-rounded">login</span>
+                    Google 로그인
+                </button>
+            `;
+        }
     },
 
     loadStorage() {
