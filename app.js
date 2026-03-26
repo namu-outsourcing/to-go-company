@@ -166,7 +166,7 @@ const app = {
             `;
         } else {
             profileArea.innerHTML = `
-                <button class="btn-primary" onclick="app.login()" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                <button id="login-btn" class="btn-primary" onclick="app.login()" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
                     <span class="material-symbols-rounded">login</span>
                     Google 로그인
                 </button>
