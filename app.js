@@ -11,6 +11,13 @@ const app = {
     pendingImages: [],
     calOffset: 0,
     calViewMode: 'month',
+    tutorialSteps: [
+        { selector: '.nav-item[data-view="dashboard"]', text: "이곳은 대시보드입니다. 전체 채용 일정과 지원 현황을 한눈에 파악할 수 있어요." },
+        { selector: '.nav-item[data-view="add-job"]', text: "공고 등록 메뉴에서는 새로운 채용 공고를 등록하고 AI가 자동으로 정보를 분석해줍니다." },
+        { selector: '.nav-item[data-view="editor"]', text: "자소서 에디터에서는 자기소개서를 작성하고 AI 맞춤법 검사를 받을 수 있습니다." },
+        { selector: '.nav-item[data-view="archive"]', text: "과거 보관함에서는 합격/불합격한 예전 지원 기록과 문항들을 다시 모아볼 수 있습니다." }
+    ],
+    currentTutorialStep: 0,
 
     _eventsBound: false,
 
@@ -32,6 +39,7 @@ const app = {
         }
         this.renderDashboard();
         this.renderCalendar();
+        this.checkTutorial();
     },
 
     showLoginWall() {
@@ -845,6 +853,59 @@ const app = {
             listDiv.innerHTML = '<p style="padding:3rem; text-align:center; color:var(--text-muted); font-size:1.1rem;">작성 완료된 과거 지원 자소서들 중 재활용할 만한 데이터가 아직은 없습니다.</p>';
         }
         document.getElementById('import-modal').classList.remove('hidden');
+    },
+
+    // ==========================================
+    // 튜토리얼 기능 메서드
+    // ==========================================
+    checkTutorial() {
+        if (!localStorage.getItem('tutorialCompleted')) {
+            setTimeout(() => { this.startTutorial(); }, 500);
+        }
+    },
+
+    startTutorial() {
+        this.currentTutorialStep = 0;
+        const overlay = document.getElementById('tutorial-overlay');
+        if (overlay) overlay.classList.remove('hidden');
+        this.showTutorialStep();
+    },
+
+    showTutorialStep() {
+        if (this.currentTutorialStep >= this.tutorialSteps.length) {
+            this.endTutorial();
+            return;
+        }
+        document.querySelectorAll('.tutorial-highlight').forEach(el => el.classList.remove('tutorial-highlight'));
+        const step = this.tutorialSteps[this.currentTutorialStep];
+        const targetEl = document.querySelector(step.selector);
+        if (targetEl) {
+            targetEl.classList.add('tutorial-highlight');
+            const rect = targetEl.getBoundingClientRect();
+            const bubble = document.getElementById('tutorial-bubble');
+            const textEl = document.getElementById('tutorial-text');
+            const nextBtn = document.getElementById('tutorial-next-btn');
+            if (textEl) textEl.innerText = step.text;
+            if (bubble) {
+                bubble.style.top = Math.max(10, rect.top - 10) + 'px';
+                bubble.style.left = (rect.right + 25) + 'px';
+            }
+            if (nextBtn) {
+                nextBtn.innerText = this.currentTutorialStep === this.tutorialSteps.length - 1 ? '완료' : '다음';
+            }
+        }
+    },
+
+    nextTutorialStep() {
+        this.currentTutorialStep++;
+        this.showTutorialStep();
+    },
+
+    endTutorial() {
+        const overlay = document.getElementById('tutorial-overlay');
+        if (overlay) overlay.classList.add('hidden');
+        document.querySelectorAll('.tutorial-highlight').forEach(el => el.classList.remove('tutorial-highlight'));
+        localStorage.setItem('tutorialCompleted', 'true');
     }
 };
 

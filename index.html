@@ -43,19 +43,19 @@
                 <h2>Career Log</h2>
             </div>
             <nav>
-                <a href="#" class="nav-item active" data-view="dashboard">
+                <a href="#" id="sidebar-1" class="nav-item active" data-view="dashboard">
                     <span class="material-symbols-rounded">dashboard</span>
                     <span>대시보드</span>
                 </a>
-                <a href="#" class="nav-item" data-view="add-job">
+                <a href="#" id="sidebar-2" class="nav-item" data-view="add-job">
                     <span class="material-symbols-rounded">add_circle</span>
                     <span>공고 등록</span>
                 </a>
-                <a href="#" class="nav-item" data-view="editor">
+                <a href="#" id="sidebar-3" class="nav-item" data-view="editor">
                     <span class="material-symbols-rounded">edit_document</span>
                     <span>자소서 에디터</span>
                 </a>
-                <a href="#" class="nav-item" data-view="archive">
+                <a href="#" id="sidebar-4" class="nav-item" data-view="archive">
                     <span class="material-symbols-rounded">inventory_2</span>
                     <span>과거 보관함</span>
                 </a>
@@ -94,17 +94,17 @@
                     <!-- Kanban Board Section -->
                     <div class="kanban-section">
                         <!-- Column: 지원 전 -->
-                        <div id="dashboard-1" class="kanban-col">
+                        <div class="kanban-col">
                             <h3>지원 전 <span class="count">0</span></h3>
                             <div class="kanban-cards" id="col-todo"></div>
                         </div>
                         <!-- Column: 지원 완료 -->
-                        <div id="dashboard-2" class="kanban-col">
+                        <div class="kanban-col">
                             <h3>지원 완료 <span class="count">0</span></h3>
                             <div class="kanban-cards" id="col-applied"></div>
                         </div>
                         <!-- Column: 면접 예정 -->
-                        <div id="dashboard-3" class="kanban-col">
+                        <div class="kanban-col">
                             <h3>면접 예정 <span class="count">0</span></h3>
                             <div class="kanban-cards" id="col-interview"></div>
                         </div>
@@ -276,6 +276,18 @@
             <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
                 <p style="color:var(--text-muted); margin-bottom:1rem;">불러올 문항을 클릭하면 현재 작성창에 내용이 복사됩니다.</p>
                 <div id="import-list" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 튜토리얼 오버레이 UI -->
+    <div id="tutorial-overlay" class="hidden">
+        <div class="tutorial-dim" onclick="app.showTutorialStep()"></div>
+        <div id="tutorial-bubble" class="tutorial-bubble">
+            <p id="tutorial-text" style="margin-bottom:1rem; font-weight:500; line-height:1.5;"></p>
+            <div class="tutorial-actions" style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+                <button id="tutorial-skip-btn" class="btn-sm" style="border:none; color:var(--text-muted);" onclick="app.endTutorial()">건너뛰기</button>
+                <button id="tutorial-next-btn" class="btn-primary" style="padding:0.5rem 1rem;" onclick="app.nextTutorialStep()">다음</button>
             </div>
         </div>
     </div>

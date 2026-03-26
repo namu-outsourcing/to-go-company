@@ -159,3 +159,41 @@ textarea { flex: 1; resize: none; margin-bottom: 1rem; font-size: 1.05rem; line-
 .ai-suggestion-actions {
     display: flex; gap: 0.5rem; margin-top: 0.8rem; justify-content: flex-end;
 }
+
+/* ========================================================= */
+/* Tutorial Overlay Styles                                   */
+/* ========================================================= */
+#tutorial-overlay {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: 2000; pointer-events: none;
+}
+.tutorial-dim {
+    position: absolute; top:0; left:0; width:100%; height:100%;
+    background: rgba(15, 23, 42, 0.6); pointer-events: auto;
+}
+.tutorial-highlight {
+    position: relative; z-index: 2001;
+    background: #ffffff;
+    box-shadow: 0 0 0 4px var(--primary);
+    border-radius: 12px;
+    pointer-events: none;
+    transition: all 0.3s ease;
+}
+.tutorial-bubble {
+    position: absolute; z-index: 2002;
+    background: #fff; padding: 1.5rem; border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    width: 300px; transition: all 0.3s ease;
+    pointer-events: auto; border: 2px solid var(--primary);
+    color: var(--text-main); font-size: 0.95rem;
+}
+.tutorial-bubble::before {
+    content: ''; position: absolute;
+    border: 10px solid transparent; border-right-color: var(--primary);
+    left: -22px; top: 20px;
+}
+.tutorial-bubble::after {
+    content: ''; position: absolute;
+    border: 9px solid transparent; border-right-color: #fff;
+    left: -18px; top: 21px;
+}
