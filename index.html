@@ -29,7 +29,7 @@
         <span class="material-symbols-rounded" style="font-size:4rem; color:var(--primary); margin-bottom:1rem;">cases</span>
         <h1 style="font-size:2rem; font-weight:700; color:var(--text-main); margin-bottom:0.5rem;">Career Log</h1>
         <p style="color:var(--text-muted); margin-bottom:2.5rem; font-size:1.05rem;">나만의 취업 준비 공간, 로그인 후 이용하세요.</p>
-        <button class="btn-primary" onclick="app.login()" style="padding:0.9rem 2.5rem; font-size:1.05rem; border-radius:12px; gap:0.6rem;">
+        <button id="google-login-btn" class="btn-primary" onclick="app.login()" style="padding:0.9rem 2.5rem; font-size:1.05rem; border-radius:12px; gap:0.6rem;">
             <span class="material-symbols-rounded">login</span>
             Google로 시작하기
         </button>
@@ -94,17 +94,17 @@
                     <!-- Kanban Board Section -->
                     <div class="kanban-section">
                         <!-- Column: 지원 전 -->
-                        <div class="kanban-col">
+                        <div id="dashboard-1" class="kanban-col">
                             <h3>지원 전 <span class="count">0</span></h3>
                             <div class="kanban-cards" id="col-todo"></div>
                         </div>
                         <!-- Column: 지원 완료 -->
-                        <div class="kanban-col">
+                        <div id="dashboard-2" class="kanban-col">
                             <h3>지원 완료 <span class="count">0</span></h3>
                             <div class="kanban-cards" id="col-applied"></div>
                         </div>
                         <!-- Column: 면접 예정 -->
-                        <div class="kanban-col">
+                        <div id="dashboard-3" class="kanban-col">
                             <h3>면접 예정 <span class="count">0</span></h3>
                             <div class="kanban-cards" id="col-interview"></div>
                         </div>
@@ -221,7 +221,7 @@
             </section>
 
             <!-- Archive View -->
-            <section id="view-archive" class="view">
+            <section id="view-archive" data-gtm-id="dashboard-4" class="view">
                 <header>
                     <h1>과거 보관함</h1>
                 </header>
