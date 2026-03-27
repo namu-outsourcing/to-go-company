@@ -24,14 +24,58 @@
     <!-- End Google Tag Manager (noscript) -->
 
     <!-- Login Wall -->
-    <div id="login-wall" style="display:none; position:fixed; inset:0; background:linear-gradient(135deg,#eff6ff 0%,#f0fdf4 100%); z-index:9999; flex-direction:column; align-items:center; justify-content:center;">
+    <div id="login-wall" style="display:none; position:fixed; inset:0; background:linear-gradient(135deg,#eff6ff 0%,#f0fdf4 100%); z-index:9999; flex-direction:column; align-items:center; justify-content:center; padding:1rem;">
         <span class="material-symbols-rounded" style="font-size:4rem; color:var(--primary); margin-bottom:1rem;">cases</span>
         <h1 style="font-size:2rem; font-weight:700; color:var(--text-main); margin-bottom:0.5rem;">Career Log</h1>
-        <p id="login-desc" style="color:var(--text-muted); margin-bottom:2.5rem; font-size:1.05rem;">나만의 취업 준비 공간, 로그인 후 이용하세요.</p>
-        <button id="google-login-btn" class="btn-primary" onclick="app.login()" style="padding:0.9rem 2.5rem; font-size:1.05rem; border-radius:12px; gap:0.6rem;">
+        <p id="login-desc" style="color:var(--text-muted); margin-bottom:2rem; font-size:1.05rem; text-align:center;">나만의 취업 준비 공간, 로그인 후 이용하세요.</p>
+
+        <!-- 약관 동의 섹션 -->
+        <div id="terms-box" style="width:100%; max-width:380px; background:#fff; border:1px solid var(--border-color); border-radius:16px; padding:1.2rem 1.5rem; margin-bottom:1rem; box-shadow:0 2px 12px rgba(0,0,0,0.07);">
+
+            <!-- 전체 동의 -->
+            <label style="display:flex; align-items:center; gap:0.75rem; cursor:pointer; font-weight:700; font-size:1rem; color:var(--text-main); padding-bottom:0.9rem; user-select:none;">
+                <input type="checkbox" id="check-all" onchange="app.onCheckAll(this)" style="width:18px; height:18px; accent-color:var(--primary); cursor:pointer; flex-shrink:0;">
+                <span class="i18n-terms-all">전체 동의</span>
+            </label>
+
+            <hr style="border:none; border-top:1px solid var(--border-color); margin:0 0 0.9rem 0;">
+
+            <!-- 이용약관 (필수) -->
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem;">
+                <label style="display:flex; align-items:center; gap:0.75rem; cursor:pointer; font-size:0.95rem; color:var(--text-main); user-select:none; flex:1;">
+                    <input type="checkbox" id="check-terms" onchange="app.onCheckItem()" style="width:16px; height:16px; accent-color:var(--primary); cursor:pointer; flex-shrink:0;">
+                    <span class="i18n-terms-service">[필수] 서비스 이용약관</span>
+                </label>
+                <a id="link-terms" href="#" onclick="app.openTermsModal('terms'); return false;" style="color:var(--text-muted); font-size:1.4rem; text-decoration:none; padding:0.1rem 0.5rem; line-height:1;" title="내용보기">›</a>
+            </div>
+
+            <!-- 개인정보 처리방침 (필수) -->
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+                <label style="display:flex; align-items:center; gap:0.75rem; cursor:pointer; font-size:0.95rem; color:var(--text-main); user-select:none; flex:1;">
+                    <input type="checkbox" id="check-privacy" onchange="app.onCheckItem()" style="width:16px; height:16px; accent-color:var(--primary); cursor:pointer; flex-shrink:0;">
+                    <span class="i18n-terms-privacy">[필수] 개인정보 수집 및 이용</span>
+                </label>
+                <a id="link-privacy" href="#" onclick="app.openTermsModal('privacy'); return false;" style="color:var(--text-muted); font-size:1.4rem; text-decoration:none; padding:0.1rem 0.5rem; line-height:1;" title="내용보기">›</a>
+            </div>
+
+        </div>
+
+        <!-- Google 로그인 버튼 (기본 비활성화) -->
+        <button id="google-login-btn" class="btn-primary" onclick="app.login()" disabled style="padding:0.9rem 2.5rem; font-size:1.05rem; border-radius:12px; gap:0.6rem; width:100%; max-width:380px; background:#94a3b8; border:none; cursor:not-allowed; transition:background 0.2s, box-shadow 0.2s;">
             <span class="material-symbols-rounded">login</span>
             <span id="login-btn-text">Google로 시작하기</span>
         </button>
+    </div>
+
+    <!-- 약관 상세 모달 -->
+    <div id="terms-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.5); z-index:10000; justify-content:center; align-items:center; padding:1rem;">
+        <div style="background:#fff; border-radius:16px; padding:2rem; width:100%; max-width:480px; max-height:80vh; overflow-y:auto; box-shadow:0 25px 50px rgba(0,0,0,0.2);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem; border-bottom:1px solid var(--border-color); padding-bottom:1rem;">
+                <h3 id="terms-modal-title" style="font-size:1.2rem; font-weight:700; color:var(--text-main); margin:0;"></h3>
+                <button onclick="document.getElementById('terms-modal').style.display='none';" style="background:none; border:none; cursor:pointer; color:var(--text-muted); display:flex; align-items:center;" class="material-symbols-rounded">close</button>
+            </div>
+            <div id="terms-modal-body" style="font-size:0.95rem; color:var(--text-muted); line-height:1.8; white-space:pre-wrap;"></div>
+        </div>
     </div>
 
     <div class="app-container">
