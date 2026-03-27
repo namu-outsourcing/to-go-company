@@ -49,6 +49,13 @@ const app = {
             editCompany:'기업명', editRole:'직무', editDeadline:'마감일 (상시모집 시 비워주세요)',
             editQLabel:'번 문항:', editQSection:'자소서 문항 관리', editAddQ:'+ 새 문항 추가', editSave:'수정내용 저장',
             autoSaveAlert:'데이터 변경 시 로컬 스토리지에 100% 안전하게 자동 저장됩니다!',
+            termsAll:'전체 동의',
+            termsService:'[필수] 서비스 이용약관',
+            termsPrivacy:'[필수] 개인정보 수집 및 이용',
+            termsServiceTitle:'서비스 이용약관',
+            termsServiceBody:`제1조 (목적)\n본 약관은 Career Log(이하 "서비스")의 이용 조건 및 절차, 이용자와 서비스 운영자의 권리·의무 및 책임사항을 규정함을 목적으로 합니다.\n\n제2조 (서비스 이용)\n이용자는 본 약관에 동의한 후 서비스를 이용할 수 있습니다. 서비스는 취업 준비를 위한 공고 관리, 자기소개서 작성, 면접 일정 관리 기능을 제공합니다.\n\n제3조 (개인정보 보호)\n서비스는 이용자의 개인정보를 관련 법령에 따라 보호합니다.\n\n제4조 (서비스 변경 및 중단)\n운영상 필요에 따라 사전 고지 후 서비스를 변경하거나 중단할 수 있습니다.`,
+            termsPrivacyTitle:'개인정보 수집 및 이용',
+            termsPrivacyBody:`1. 수집하는 개인정보\n- 필수: 이름, 이메일 주소 (Google 로그인 시 자동 수집)\n- 선택: 공고 정보, 자기소개서 등 입력 데이터\n\n2. 수집 및 이용 목적\n- 서비스 제공 및 회원 식별\n- 취업 준비 데이터 저장 및 관리\n- 서비스 개선 및 통계 분석\n\n3. 보유 및 이용 기간\n- 회원 탈퇴 시까지 또는 수집·이용 목적 달성 시\n- 관련 법령에 따른 보존 기간 준수\n\n4. 동의 거부 권리\n동의를 거부할 권리가 있으나, 거부 시 서비스 이용이 제한될 수 있습니다.`,
             saveSuccess:'공고가 성공적으로 등록되었습니다!',
             urlError:'올바른 공고 링크(URL)를 입력해주세요.', contentError:'공고 내용을 텍스트로 복붙하거나 스크린샷으로 첨부해주세요.',
             deleteConfirm:'서류를 정말 삭제하시겠습니까?',
@@ -98,6 +105,13 @@ const app = {
             editCompany:'Company', editRole:'Role', editDeadline:'Deadline (leave blank if always open)',
             editQLabel:' Question:', editQSection:'Essay Question Management', editAddQ:'+ Add Question', editSave:'Save Changes',
             autoSaveAlert:'All changes are auto-saved 100% safely to local storage!',
+            termsAll:'Agree to All',
+            termsService:'[Required] Terms of Service',
+            termsPrivacy:'[Required] Privacy Policy',
+            termsServiceTitle:'Terms of Service',
+            termsServiceBody:`Article 1 (Purpose)\nThese terms regulate the conditions and procedures for using Career Log (the "Service"), and the rights, obligations and responsibilities of users and the operator.\n\nArticle 2 (Use of Service)\nUsers may use the service after agreeing to these terms. The service provides job posting management, cover letter writing, and interview scheduling features.\n\nArticle 3 (Privacy Protection)\nThe service protects personal information in accordance with applicable laws.\n\nArticle 4 (Changes and Suspension)\nThe service may be changed or suspended with prior notice as operationally necessary.`,
+            termsPrivacyTitle:'Privacy Policy',
+            termsPrivacyBody:`1. Information Collected\n- Required: Name, email address (auto-collected via Google login)\n- Optional: Job posting info, cover letters, and other input data\n\n2. Purpose of Collection\n- Service provision and member identification\n- Storage and management of job preparation data\n- Service improvement and statistical analysis\n\n3. Retention Period\n- Until membership withdrawal or purpose is achieved\n- Compliance with applicable legal retention requirements\n\n4. Right to Refuse\nYou may refuse consent, but doing so may restrict your use of the service.`,
             saveSuccess:'Job posted successfully!',
             urlError:'Please enter a valid job posting URL.', contentError:'Please paste the job description text or attach a screenshot.',
             deleteConfirm:'Are you sure you want to delete this document?',
@@ -145,6 +159,9 @@ const app = {
             'i18n-modal-original': L.modalOriginal,
             'i18n-import-title': L.importTitle, 'i18n-import-hint': L.importHint,
             'i18n-tutorial-skip': L.tutSkip, 'i18n-tutorial-next': L.tutNext,
+            'i18n-terms-all': L.termsAll,
+            'i18n-terms-service': L.termsService,
+            'i18n-terms-privacy': L.termsPrivacy,
         };
         Object.keys(map).forEach(cls => {
             document.querySelectorAll('.' + cls).forEach(el => { el.textContent = map[cls]; });
@@ -160,6 +177,110 @@ const app = {
         const jt = document.getElementById('job-text'); if (jt) jt.placeholder = L.addjobTextPlaceholder || (this.lang === 'ko' ? '여기에 채용공고 텍스트를 통째로 복붙하시거나, 화면 캡처 후 Ctrl+V로 붙여넣어주세요.' : 'Paste the full job posting text here, or press Ctrl+V to paste a screenshot.');
     },
     showAutoSaveAlert() { alert(this.t('autoSaveAlert')); },
+
+    // ── 약관 동의 로직 ─────────────────────────────────────────────────
+    onCheckAll(el) {
+        const checked = el.checked;
+        const terms = document.getElementById('check-terms');
+        const privacy = document.getElementById('check-privacy');
+        if (terms) terms.checked = checked;
+        if (privacy) privacy.checked = checked;
+        this._updateLoginBtn();
+    },
+    onCheckItem() {
+        const terms = document.getElementById('check-terms')?.checked;
+        const privacy = document.getElementById('check-privacy')?.checked;
+        const all = document.getElementById('check-all');
+        if (all) all.checked = !!(terms && privacy);
+        this._updateLoginBtn();
+    },
+    _updateLoginBtn() {
+        const terms = document.getElementById('check-terms')?.checked;
+        const privacy = document.getElementById('check-privacy')?.checked;
+        const btn = document.getElementById('google-login-btn');
+        if (!btn) return;
+        const ok = !!(terms && privacy);
+        btn.disabled = !ok;
+        btn.style.background = ok ? 'var(--primary)' : '#94a3b8';
+        btn.style.cursor = ok ? 'pointer' : 'not-allowed';
+        btn.style.boxShadow = ok ? '0 2px 4px rgba(37,99,235,0.2)' : 'none';
+    },
+    openTermsModal(type) {
+        const modal = document.getElementById('terms-modal');
+        const title = document.getElementById('terms-modal-title');
+        const body = document.getElementById('terms-modal-body');
+        if (!modal || !title || !body) return;
+        title.textContent = type === 'terms' ? this.t('termsServiceTitle') : this.t('termsPrivacyTitle');
+        body.textContent = type === 'terms' ? this.t('termsServiceBody') : this.t('termsPrivacyBody');
+        modal.style.display = 'flex';
+    },
+    // ──────────────────────────────────────────────────────────────────
+
+    // ── 약관 동의 로직 ──────────────────────────────────────────────
+    handleCheckAll(checkbox) {
+        const checked = checkbox.checked;
+        document.getElementById('check-terms').checked = checked;
+        document.getElementById('check-privacy').checked = checked;
+        this.updateLoginBtn();
+    },
+
+    handleCheckItem() {
+        const terms = document.getElementById('check-terms')?.checked;
+        const privacy = document.getElementById('check-privacy')?.checked;
+        const allCheck = document.getElementById('check-all');
+        if (allCheck) allCheck.checked = terms && privacy;
+        this.updateLoginBtn();
+    },
+
+    updateLoginBtn() {
+        const terms = document.getElementById('check-terms')?.checked;
+        const privacy = document.getElementById('check-privacy')?.checked;
+        const btn = document.getElementById('google-login-btn');
+        if (!btn) return;
+        const allChecked = terms && privacy;
+        btn.disabled = !allChecked;
+        btn.style.background = allChecked ? 'var(--primary)' : '#94a3b8';
+        btn.style.cursor = allChecked ? 'pointer' : 'not-allowed';
+    },
+
+    openTermsModal(type) {
+        const modal = document.getElementById('terms-modal');
+        const title = document.getElementById('terms-modal-title');
+        const body = document.getElementById('terms-modal-body');
+        if (!modal) return;
+        if (type === 'terms') {
+            title.textContent = this.lang === 'ko' ? '서비스 이용약관' : 'Terms of Service';
+            body.innerHTML = `
+                <p style="margin-bottom:1rem;"><strong>제1조 (목적)</strong><br>
+                본 약관은 Career Log(이하 "서비스")의 이용과 관련하여 서비스와 이용자 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.</p>
+                <p style="margin-bottom:1rem;"><strong>제2조 (서비스 이용)</strong><br>
+                이용자는 본 약관에 동의함으로써 서비스를 이용할 수 있으며, 서비스는 취업 준비를 위한 공고 관리, 자기소개서 작성 등의 기능을 제공합니다.</p>
+                <p style="margin-bottom:1rem;"><strong>제3조 (개인정보 보호)</strong><br>
+                서비스는 이용자의 개인정보를 관련 법령에 따라 보호하며, 별도의 개인정보 처리방침에 따라 처리합니다.</p>
+                <p style="margin-bottom:1rem;"><strong>제4조 (책임 제한)</strong><br>
+                서비스는 이용자가 제공한 정보의 정확성에 대해 책임을 지지 않으며, AI 분석 결과는 참고용으로만 활용하시기 바랍니다.</p>
+                <p><strong>제5조 (약관 변경)</strong><br>
+                서비스는 필요 시 본 약관을 변경할 수 있으며, 변경된 약관은 서비스 내 공지를 통해 안내합니다.</p>
+            `;
+        } else {
+            title.textContent = this.lang === 'ko' ? '개인정보 수집 및 이용' : 'Privacy Policy';
+            body.innerHTML = `
+                <p style="margin-bottom:1rem;"><strong>수집 항목</strong><br>
+                이메일 주소, 이름, 프로필 사진 (Google 로그인 시 제공되는 정보)</p>
+                <p style="margin-bottom:1rem;"><strong>수집 목적</strong><br>
+                회원 식별 및 서비스 제공, 취업 준비 데이터(공고, 자기소개서 등) 저장 및 관리</p>
+                <p style="margin-bottom:1rem;"><strong>보유 기간</strong><br>
+                서비스 탈퇴 시까지 보유하며, 탈퇴 후 즉시 삭제합니다.</p>
+                <p style="margin-bottom:1rem;"><strong>제3자 제공</strong><br>
+                수집된 개인정보는 법령에 의한 경우를 제외하고 제3자에게 제공하지 않습니다.</p>
+                <p><strong>동의 거부 권리</strong><br>
+                이용자는 개인정보 수집·이용에 대한 동의를 거부할 권리가 있으나, 거부 시 서비스 이용이 제한될 수 있습니다.</p>
+            `;
+        }
+        modal.classList.remove('hidden');
+    },
+    // ─────────────────────────────────────────────────────────────────
+
     // ─────────────────────────────────────────────────────────────────────
 
     state: { user: null, session: null, jobs: [], editorJobId: null, editorActiveQIndex: 0 },
@@ -211,7 +332,7 @@ const app = {
     hideLoginWall() {
         const wall = document.getElementById('login-wall');
         wall.style.display = 'none';
-        document.querySelector('.app-container').style.display = 'flex';
+        document.querySelector('.app-container').style.display = '';
     },
 
     async loadFromSupabase() {
