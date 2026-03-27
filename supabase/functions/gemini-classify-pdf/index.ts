@@ -4,15 +4,24 @@ const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   const authHeader = req.headers.get('Authorization')
-  if (!authHeader) return new Response('Unauthorized', { status: 401 })
+  if (!authHeader) return new Response('Unauthorized', { status: 401, headers: corsHeaders })
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     global: { headers: { Authorization: authHeader } }
   })
   const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) return new Response('Unauthorized', { status: 401 })
+  if (error || !user) return new Response('Unauthorized', { status: 401, headers: corsHeaders })
 
   const { pdfBase64 } = await req.json()
 
@@ -36,5 +45,5 @@ Deno.serve(async (req) => {
   const data = await resp.json()
   const text_result = data.candidates[0].content.parts[0].text.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim()
 
-  return new Response(text_result, { headers: { 'Content-Type': 'application/json' } })
+  return new Response(text_result, { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 })
