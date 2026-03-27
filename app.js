@@ -1,6 +1,18 @@
 import { supabase } from './supabase.js';
 
-const API_KEY = import.meta.env.VITE_API_KEY;
+const SUPABASE_FUNCTIONS_URL = 'https://hixuqxymfkqwtpgpowcz.supabase.co/functions/v1';
+
+async function callEdgeFunction(path, body) {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    const resp = await fetch(`${SUPABASE_FUNCTIONS_URL}/${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(body)
+    });
+    if (!resp.ok) throw new Error(`Edge Function error: ${resp.status}`);
+    return resp.json();
+}
 
 const app = {
     state: { user: null, jobs: [], editorJobId: null, editorActiveQIndex: 0 },
@@ -11,16 +23,15 @@ const app = {
     pendingImages: [],
     calOffset: 0,
     calViewMode: 'month',
-
-    _eventsBound: false,
-
     tutorialSteps: [
         { selector: '.nav-item[data-view="dashboard"]', text: "이곳은 대시보드입니다. 전체 채용 일정과 지원 현황을 한눈에 파악할 수 있어요." },
-        { selector: '.nav-item[data-view="add-job"]', text: "공고 등록에서 채용 공고 URL과 내용을 붙여넣으면 AI가 기업명, 직무, 마감일, 자소서 문항을 자동으로 추출해줍니다." },
-        { selector: '.nav-item[data-view="editor"]', text: "자소서 에디터에서 문항별로 자기소개서를 작성하고 AI 맞춤법 검사를 받을 수 있어요." },
-        { selector: '.nav-item[data-view="archive"]', text: "과거 보관함에서 합격/불합격한 지원 기록과 자소서를 다시 꺼내 재활용할 수 있습니다. 이걸로 튜토리얼 끝! 🎉" }
+        { selector: '.nav-item[data-view="add-job"]', text: "공고 등록 메뉴에서는 새로운 채용 공고를 등록하고 AI가 자동으로 정보를 분석해줍니다." },
+        { selector: '.nav-item[data-view="editor"]', text: "자소서 에디터에서는 자기소개서를 작성하고 AI 맞춤법 검사를 받을 수 있습니다." },
+        { selector: '.nav-item[data-view="archive"]', text: "과거 보관함에서는 합격/불합격한 예전 지원 기록과 문항들을 다시 모아볼 수 있습니다." }
     ],
     currentTutorialStep: 0,
+
+    _eventsBound: false,
 
     async init() {
         await this.checkUser();
@@ -40,7 +51,7 @@ const app = {
         }
         this.renderDashboard();
         this.renderCalendar();
-        setTimeout(() => this.checkTutorial(), 300);
+        this.checkTutorial();
     },
 
     showLoginWall() {
@@ -58,7 +69,7 @@ const app = {
     async loadFromSupabase() {
         const { data, error } = await supabase
             .from('user_data')
-            .select('jobs, tutorial_completed')
+            .select('jobs')
             .eq('user_id', this.state.user.id)
             .single();
         if (error && error.code !== 'PGRST116') {
@@ -66,7 +77,6 @@ const app = {
             return;
         }
         this.state.jobs = data?.jobs || [];
-        this.state.tutorialCompleted = data?.tutorial_completed ?? false;
     },
 
     async checkUser() {
@@ -168,7 +178,7 @@ const app = {
             `;
         } else {
             profileArea.innerHTML = `
-                <button class="btn-primary" onclick="app.login()" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                <button id="login-btn" class="btn-primary" onclick="app.login()" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
                     <span class="material-symbols-rounded">login</span>
                     Google 로그인
                 </button>
@@ -180,7 +190,7 @@ const app = {
         if (!this.state.user) return;
         supabase
             .from('user_data')
-            .upsert({ user_id: this.state.user.id, jobs: this.state.jobs, tutorial_completed: this.state.tutorialCompleted ?? false, updated_at: new Date().toISOString() })
+            .upsert({ user_id: this.state.user.id, jobs: this.state.jobs, updated_at: new Date().toISOString() })
             .then(({ error }) => { if (error) console.error('Save error:', error); });
     },
 
@@ -328,28 +338,12 @@ const app = {
         const dataDiv = resultDiv.querySelector('.parsed-data');
         resultDiv.classList.remove('hidden'); loader.classList.remove('hidden'); dataDiv.classList.add('hidden');
 
-        // AI 검색 우회 대신, 사용자가 입력한 텍스트/이미지만으로 파싱
-        const prompt = `다음 채용 공고 정보(입력 텍스트 및 첨부된 캡처본)에서 기업명, 직무명, 마감일, 자소서 문항을 추출해 순수 JSON만 반환하세요.
-원본 출처 URL은 사용자가 별도로 입력했으므로 해당 URL을 그대로 유지하세요.
-반환할 JSON 형식:
-{ "company": "기업명", "role": "직무명", "deadline": "YYYY-MM-DD(상시모집이면 '상시모집')", "questions": ["문항1", "문항2"], "sourceUrl": "${urlInput}" }
-입력된 텍스트/URL 정보: ${textInput || '빈 텍스트(첨부된 이미지 참조)'}`;
-
-        const parts = [{ text: prompt }];
-        this.pendingImages.forEach(img => {
-            parts.push({ inlineData: { mimeType: img.mimeType, data: img.base64Data } });
-        });
-
-        try {
-            const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    contents: [{ parts }], 
-                    generationConfig: { responseMimeType: "application/json" } 
-                })
+try {
+            const parsed = await callEdgeFunction('gemini-parse-job', {
+                text: textInput,
+                sourceUrl: urlInput,
+                images: this.pendingImages.map(img => ({ base64Data: img.base64Data, mimeType: img.mimeType }))
             });
-            const data = await resp.json();
-            let parsed = JSON.parse(data.candidates[0].content.parts[0].text.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim());
             if (urlInput.trim().startsWith('http')) parsed.sourceUrl = urlInput.trim();
             this.fillParsedData(parsed);
 
@@ -371,7 +365,14 @@ const app = {
 
         const qList = document.getElementById('p-questions'); qList.innerHTML = '';
         if (parsed.questions && parsed.questions.length > 0) {
-            parsed.questions.forEach(q => { qList.innerHTML += `<div class="q-badge" contenteditable="true" style="cursor:text; border:1px solid #cbd5e1">${q}</div>`; });
+            parsed.questions.forEach(q => {
+                const div = document.createElement('div');
+                div.className = 'q-badge';
+                div.contentEditable = 'true';
+                div.style.cssText = 'cursor:text; border:1px solid #cbd5e1';
+                div.textContent = q;
+                qList.appendChild(div);
+            });
         } else {
             qList.innerHTML = '<div class="q-badge empty-q" contenteditable="true" data-placeholder="직접 문항을 입력해주세요." style="cursor:text; border:1px solid #cbd5e1"></div>';
         }
@@ -484,19 +485,8 @@ const app = {
 
             let docType = "기타서류";
             try {
-                // PDF 파싱: Gemini로 문서 종류 식별
-                const prompt = `이 문서(PDF)의 내용을 분석해서, 다음 중 어떤 종류의 문서인지 정확히 1개만 알려주세요: [이력서, 자기소개서, 포트폴리오, 기타서류]. 
-1. 이력서: 개인사진, 학력, 경력사항, 기본인적사항 있음
-2. 자기소개서: 1, 2, 3번 문항 등 에세이 형식의 긴 글위주
-3. 포트폴리오: 프로젝트 명세, 역할, 디자인, 시각화 산출물 등
-반드시 순수 JSON 형식으로 응답: {"type": "문서종류"}`;
-                const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: "application/pdf", data: base64Data } }] }], generationConfig: { responseMimeType: "application/json" } })
-                });
-                const d = await resp.json();
-                let txt = d.candidates[0].content.parts[0].text.replace(/^```json\n?/, '').replace(/\n?```$/, '');
-                docType = JSON.parse(txt.trim()).type || "제출물";
+                const result = await callEdgeFunction('gemini-classify-pdf', { pdfBase64: base64Data });
+                docType = result.type || "제출물";
             } catch (error) { console.warn("PDF parsing failed -> fallback", error); docType = "제출물"; }
 
             const today = new Date().toISOString().split('T')[0].replace(/-/g, '');
@@ -722,7 +712,12 @@ const app = {
         const job = this.state.jobs.find(j => j.id === jobId);
         if (!job) return;
         this.state.editorJobId = jobId; this.state.editorActiveQIndex = 0;
-        document.getElementById('editor-company').innerHTML = `${job.company} <span style="font-weight:500; font-size:1.1rem; color:var(--text-muted)">| ${job.role}</span>`;
+        const editorCompany = document.getElementById('editor-company');
+        editorCompany.textContent = job.company;
+        const roleSpan = document.createElement('span');
+        roleSpan.style.cssText = 'font-weight:500; font-size:1.1rem; color:var(--text-muted)';
+        roleSpan.textContent = ` | ${job.role}`;
+        editorCompany.appendChild(roleSpan);
         this.renderEditorQuestions(job); this.loadEditorQuestion(0);
     },
 
@@ -730,7 +725,13 @@ const app = {
         const qList = document.querySelector('.q-list'); qList.innerHTML = '';
         if (!job.questions || job.questions.length === 0) { qList.innerHTML = '<div class="q-item active" style="white-space:normal; word-break:keep-all;">문항이 없습니다.</div>'; return; }
         job.questions.forEach((q, idx) => {
-            qList.innerHTML += `<div class="q-item ${idx === 0 ? 'active' : ''}" data-idx="${idx}" onclick="app.loadEditorQuestion(${idx})" style="white-space:normal; word-break:keep-all;">${idx + 1}. ${q}</div>`;
+            const div = document.createElement('div');
+            div.className = `q-item ${idx === 0 ? 'active' : ''}`;
+            div.dataset.idx = idx;
+            div.style.cssText = 'white-space:normal; word-break:keep-all;';
+            div.textContent = `${idx + 1}. ${q}`;
+            div.onclick = () => app.loadEditorQuestion(idx);
+            qList.appendChild(div);
         });
     },
 
@@ -765,29 +766,22 @@ const app = {
         statusLabel.className = 'spell-check-status warning';
         document.getElementById('ai-suggestion-box').style.display = 'none';
 
-        const prompt = `제공된 한국어 자소서 텍스트의 맞춤법, 띄어쓰기, 오탈자를 교정하고 어색한 표현을 더 자연스럽게 다듬어주세요. 
-결과는 오직 순수 JSON으로만 반환해야 합니다. 응답 형식: {"explanation": "무엇이 틀렸고 어떻게 고쳤는지 브리핑 (2-3문장)", "correctedText": "최종 완성된 전체 텍스트 본문 (해당 텍스트 속성은 마크다운이 없어야 함)"}
-텍스트: ${textToFix}`;
-
         try {
-            const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.1, responseMimeType: "application/json" } })
-            });
-            const d = await resp.json();
-            const parsed = JSON.parse(d.candidates[0].content.parts[0].text.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim());
+            const parsed = await callEdgeFunction('gemini-spell-check', { text: textToFix });
 
             const suggBox = document.getElementById('ai-suggestion-box');
             suggBox.style.display = 'block';
             suggBox.innerHTML = `
-                <div style="margin-bottom:0.5rem; color:var(--text-main);"><strong>💡 맞춤법 교정 요약:</strong> ${parsed.explanation}</div>
-                <textarea id="spell-check-edit-area" style="width:100%; min-height:120px; background:#fff; border:1px solid #fbcfe8; padding:1rem; border-radius:6px; margin-bottom:0.8rem; font-size:0.95rem; color:var(--text-main); font-family:inherit; resize:vertical;">${parsed.correctedText}</textarea>
+                <div style="margin-bottom:0.5rem; color:var(--text-main);"><strong>💡 맞춤법 교정 요약:</strong> <span id="spell-explanation"></span></div>
+                <textarea id="spell-check-edit-area" style="width:100%; min-height:120px; background:#fff; border:1px solid #fbcfe8; padding:1rem; border-radius:6px; margin-bottom:0.8rem; font-size:0.95rem; color:var(--text-main); font-family:inherit; resize:vertical;"></textarea>
                 <div style="font-size:0.85rem; color:var(--text-muted); margin-top:-0.5rem; margin-bottom:0.8rem;">원하는 부분이 있다면 위 텍스트를 직접 수정한 뒤 적용할 수 있습니다.</div>
                 <div class="ai-suggestion-actions">
                     <button class="btn-sm" style="background:#fff; border:1px solid var(--border-color); color:var(--text-muted);" onclick="document.getElementById('ai-suggestion-box').style.display='none'; document.getElementById('spell-check-status').innerHTML='<span class=\\'material-symbols-rounded\\'>info</span> 교정이 취소되었습니다.'; document.getElementById('spell-check-status').className='spell-check-status warning';">취소하고 닫기</button>
                     <button class="btn-primary" style="padding:0.5rem 1rem; border-radius:6px;" onclick="app.applySpellCheck()">이 내용으로 덮어씌울게요!</button>
                 </div>
             `;
+            document.getElementById('spell-explanation').textContent = parsed.explanation;
+            document.getElementById('spell-check-edit-area').value = parsed.correctedText;
             statusLabel.innerHTML = '<span class="material-symbols-rounded">check_circle</span> 교정 제안 생성 완료 (내용을 확인해주세요)';
             statusLabel.className = 'spell-check-status ideal';
         } catch (e) {
@@ -810,44 +804,6 @@ const app = {
         const statusLabel = document.getElementById('spell-check-status');
         statusLabel.innerHTML = '<span class="material-symbols-rounded">check_circle</span> 에디터에 성공적으로 반영/저장됨';
         statusLabel.className = 'spell-check-status ideal';
-    },
-
-    checkTutorial() {
-        if (!this.state.tutorialCompleted) this.startTutorial();
-    },
-
-    startTutorial() {
-        this.currentTutorialStep = 0;
-        document.getElementById('tutorial-overlay').classList.remove('hidden');
-        this.showTutorialStep();
-    },
-
-    showTutorialStep() {
-        document.querySelectorAll('.tutorial-highlight').forEach(el => el.classList.remove('tutorial-highlight'));
-        const step = this.tutorialSteps[this.currentTutorialStep];
-        const target = document.querySelector(step.selector);
-        if (!target) return;
-        target.classList.add('tutorial-highlight');
-        const rect = target.getBoundingClientRect();
-        const bubble = document.getElementById('tutorial-bubble');
-        document.getElementById('tutorial-text').innerText = step.text;
-        bubble.style.top = Math.max(10, rect.top - 10) + 'px';
-        bubble.style.left = (rect.right + 25) + 'px';
-        const nextBtn = document.getElementById('tutorial-next');
-        if (nextBtn) nextBtn.innerText = this.currentTutorialStep === this.tutorialSteps.length - 1 ? '완료' : '다음';
-    },
-
-    nextTutorialStep() {
-        this.currentTutorialStep++;
-        if (this.currentTutorialStep >= this.tutorialSteps.length) { this.endTutorial(); return; }
-        this.showTutorialStep();
-    },
-
-    endTutorial() {
-        document.getElementById('tutorial-overlay').classList.add('hidden');
-        document.querySelectorAll('.tutorial-highlight').forEach(el => el.classList.remove('tutorial-highlight'));
-        this.state.tutorialCompleted = true;
-        this.saveStorage();
     },
 
     openImportModal() {
@@ -893,6 +849,59 @@ const app = {
             listDiv.innerHTML = '<p style="padding:3rem; text-align:center; color:var(--text-muted); font-size:1.1rem;">작성 완료된 과거 지원 자소서들 중 재활용할 만한 데이터가 아직은 없습니다.</p>';
         }
         document.getElementById('import-modal').classList.remove('hidden');
+    },
+
+    // ==========================================
+    // 튜토리얼 기능 메서드
+    // ==========================================
+    checkTutorial() {
+        if (!localStorage.getItem('tutorialCompleted')) {
+            setTimeout(() => { this.startTutorial(); }, 500);
+        }
+    },
+
+    startTutorial() {
+        this.currentTutorialStep = 0;
+        const overlay = document.getElementById('tutorial-overlay');
+        if (overlay) overlay.classList.remove('hidden');
+        this.showTutorialStep();
+    },
+
+    showTutorialStep() {
+        if (this.currentTutorialStep >= this.tutorialSteps.length) {
+            this.endTutorial();
+            return;
+        }
+        document.querySelectorAll('.tutorial-highlight').forEach(el => el.classList.remove('tutorial-highlight'));
+        const step = this.tutorialSteps[this.currentTutorialStep];
+        const targetEl = document.querySelector(step.selector);
+        if (targetEl) {
+            targetEl.classList.add('tutorial-highlight');
+            const rect = targetEl.getBoundingClientRect();
+            const bubble = document.getElementById('tutorial-bubble');
+            const textEl = document.getElementById('tutorial-text');
+            const nextBtn = document.getElementById('tutorial-next-btn');
+            if (textEl) textEl.innerText = step.text;
+            if (bubble) {
+                bubble.style.top = Math.max(10, rect.top - 10) + 'px';
+                bubble.style.left = (rect.right + 25) + 'px';
+            }
+            if (nextBtn) {
+                nextBtn.innerText = this.currentTutorialStep === this.tutorialSteps.length - 1 ? '완료' : '다음';
+            }
+        }
+    },
+
+    nextTutorialStep() {
+        this.currentTutorialStep++;
+        this.showTutorialStep();
+    },
+
+    endTutorial() {
+        const overlay = document.getElementById('tutorial-overlay');
+        if (overlay) overlay.classList.add('hidden');
+        document.querySelectorAll('.tutorial-highlight').forEach(el => el.classList.remove('tutorial-highlight'));
+        localStorage.setItem('tutorialCompleted', 'true');
     }
 };
 

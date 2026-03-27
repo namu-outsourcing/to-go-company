@@ -2,6 +2,13 @@
 <html lang="ko">
 
 <head>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-T973BB6Q');</script>
+    <!-- End Google Tag Manager -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>취준 AI 에이전트</title>
@@ -13,12 +20,16 @@
 </head>
 
 <body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-T973BB6Q"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
     <!-- Login Wall -->
     <div id="login-wall" style="display:none; position:fixed; inset:0; background:linear-gradient(135deg,#eff6ff 0%,#f0fdf4 100%); z-index:9999; flex-direction:column; align-items:center; justify-content:center;">
         <span class="material-symbols-rounded" style="font-size:4rem; color:var(--primary); margin-bottom:1rem;">cases</span>
         <h1 style="font-size:2rem; font-weight:700; color:var(--text-main); margin-bottom:0.5rem;">Career Log</h1>
         <p style="color:var(--text-muted); margin-bottom:2.5rem; font-size:1.05rem;">나만의 취업 준비 공간, 로그인 후 이용하세요.</p>
-        <button class="btn-primary" onclick="app.login()" style="padding:0.9rem 2.5rem; font-size:1.05rem; border-radius:12px; gap:0.6rem;">
+        <button id="google-login-btn" class="btn-primary" onclick="app.login()" style="padding:0.9rem 2.5rem; font-size:1.05rem; border-radius:12px; gap:0.6rem;">
             <span class="material-symbols-rounded">login</span>
             Google로 시작하기
         </button>
@@ -32,19 +43,19 @@
                 <h2>Career Log</h2>
             </div>
             <nav>
-                <a href="#" class="nav-item active" data-view="dashboard">
+                <a href="#" id="sidebar-1" class="nav-item active" data-view="dashboard">
                     <span class="material-symbols-rounded">dashboard</span>
                     <span>대시보드</span>
                 </a>
-                <a href="#" class="nav-item" data-view="add-job">
+                <a href="#" id="sidebar-2" class="nav-item" data-view="add-job">
                     <span class="material-symbols-rounded">add_circle</span>
                     <span>공고 등록</span>
                 </a>
-                <a href="#" class="nav-item" data-view="editor">
+                <a href="#" id="sidebar-3" class="nav-item" data-view="editor">
                     <span class="material-symbols-rounded">edit_document</span>
                     <span>자소서 에디터</span>
                 </a>
-                <a href="#" class="nav-item" data-view="archive">
+                <a href="#" id="sidebar-4" class="nav-item" data-view="archive">
                     <span class="material-symbols-rounded">inventory_2</span>
                     <span>과거 보관함</span>
                 </a>
@@ -83,17 +94,17 @@
                     <!-- Kanban Board Section -->
                     <div class="kanban-section">
                         <!-- Column: 지원 전 -->
-                        <div class="kanban-col">
+                        <div id="dashboard-1" class="kanban-col">
                             <h3>지원 전 <span class="count">0</span></h3>
                             <div class="kanban-cards" id="col-todo"></div>
                         </div>
                         <!-- Column: 지원 완료 -->
-                        <div class="kanban-col">
+                        <div id="dashboard-2" class="kanban-col">
                             <h3>지원 완료 <span class="count">0</span></h3>
                             <div class="kanban-cards" id="col-applied"></div>
                         </div>
                         <!-- Column: 면접 예정 -->
-                        <div class="kanban-col">
+                        <div id="dashboard-3" class="kanban-col">
                             <h3>면접 예정 <span class="count">0</span></h3>
                             <div class="kanban-cards" id="col-interview"></div>
                         </div>
@@ -210,7 +221,7 @@
             </section>
 
             <!-- Archive View -->
-            <section id="view-archive" class="view">
+            <section id="view-archive" data-gtm-id="dashboard-4" class="view">
                 <header>
                     <h1>과거 보관함</h1>
                 </header>
@@ -269,14 +280,14 @@
         </div>
     </div>
 
-    <!-- Tutorial Overlay -->
+    <!-- 튜토리얼 오버레이 UI -->
     <div id="tutorial-overlay" class="hidden">
-        <div class="tutorial-dim" onclick="app.nextTutorialStep()"></div>
+        <div class="tutorial-dim" onclick="app.showTutorialStep()"></div>
         <div id="tutorial-bubble" class="tutorial-bubble">
-            <p id="tutorial-text" style="margin-bottom:1rem; font-weight:500; line-height:1.6;"></p>
-            <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
-                <button class="btn-sm" style="border:none; color:var(--text-muted);" onclick="app.endTutorial()">건너뛰기</button>
-                <button id="tutorial-next" class="btn-primary" style="padding:0.5rem 1rem;" onclick="app.nextTutorialStep()">다음</button>
+            <p id="tutorial-text" style="margin-bottom:1rem; font-weight:500; line-height:1.5;"></p>
+            <div class="tutorial-actions" style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+                <button id="tutorial-skip-btn" class="btn-sm" style="border:none; color:var(--text-muted);" onclick="app.endTutorial()">건너뛰기</button>
+                <button id="tutorial-next-btn" class="btn-primary" style="padding:0.5rem 1rem;" onclick="app.nextTutorialStep()">다음</button>
             </div>
         </div>
     </div>
