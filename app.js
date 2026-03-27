@@ -109,9 +109,9 @@ const app = {
             termsService:'[Required] Terms of Service',
             termsPrivacy:'[Required] Privacy Policy',
             termsServiceTitle:'Terms of Service',
-            termsServiceBody:`Article 1 (Purpose)\nThese terms regulate the conditions and procedures for using Career Log (the "Service"), and the rights, obligations and responsibilities of users and the operator.\n\nArticle 2 (Use of Service)\nUsers may use the service after agreeing to these terms. The service provides job posting management, cover letter writing, and interview scheduling features.\n\nArticle 3 (Privacy Protection)\nThe service protects personal information in accordance with applicable laws.\n\nArticle 4 (Changes and Suspension)\nThe service may be changed or suspended with prior notice as operationally necessary.`,
+            termsServiceBody:`제1조 (목적)\n본 약관은 'Career Log'가 제공하는 취업 준비 관리 서비스의 이용 조건 및 절차를 규정함을 목적으로 합니다.\n\n제2조 (이용자의 의무)\n이용자는 본인의 취업 준비를 위해 성실히 서비스를 이용해야 하며, 타인의 정보를 도용하지 않습니다.\n\n제3조 (서비스 변경)\n서비스는 운영상 필요 시 사전 고지 후 변경될 수 있습니다.`,
             termsPrivacyTitle:'Privacy Policy',
-            termsPrivacyBody:`1. Information Collected\n- Required: Name, email address (auto-collected via Google login)\n- Optional: Job posting info, cover letters, and other input data\n\n2. Purpose of Collection\n- Service provision and member identification\n- Storage and management of job preparation data\n- Service improvement and statistical analysis\n\n3. Retention Period\n- Until membership withdrawal or purpose is achieved\n- Compliance with applicable legal retention requirements\n\n4. Right to Refuse\nYou may refuse consent, but doing so may restrict your use of the service.`,
+            termsPrivacyBody:`1. 수집 항목: 이름, 이메일, 프로필 사진 (Google 로그인 시 자동 수집)\n2. 수집 목적: 서비스 회원 식별 및 개인별 진도(성경 통독, 취업 준비) 관리\n3. 보유 기간: 서비스 회원 탈퇴 시까지 보유하며, 탈퇴 시 즉시 파기합니다.\n4. 동의 거부: 이용자는 동의를 거부할 수 있으나, 거부 시 서비스 이용이 제한됩니다.`,
             saveSuccess:'Job posted successfully!',
             urlError:'Please enter a valid job posting URL.', contentError:'Please paste the job description text or attach a screenshot.',
             deleteConfirm:'Are you sure you want to delete this document?',
@@ -206,14 +206,17 @@ const app = {
         btn.style.boxShadow = ok ? '0 2px 4px rgba(37,99,235,0.2)' : 'none';
     },
     openTermsModal(type) {
-        const modal = document.getElementById('terms-modal');
-        const title = document.getElementById('terms-modal-title');
-        const body = document.getElementById('terms-modal-body');
-        if (!modal || !title || !body) return;
-        title.textContent = type === 'terms' ? this.t('termsServiceTitle') : this.t('termsPrivacyTitle');
-        body.textContent = type === 'terms' ? this.t('termsServiceBody') : this.t('termsPrivacyBody');
-        modal.style.display = 'flex';
-    },
+    const modal = document.getElementById('terms-modal');
+    const title = document.getElementById('terms-modal-title');
+    const body = document.getElementById('terms-modal-body');
+    if (!modal || !title || !body) return;
+
+    // 현재 언어 설정에 맞는 제목과 내용을 가져옴
+    title.textContent = type === 'terms' ? this.t('termsServiceTitle') : this.t('termsPrivacyTitle');
+    body.textContent = type === 'terms' ? this.t('termsServiceBody') : this.t('termsPrivacyBody');
+    
+    modal.style.display = 'flex';
+},
     // ──────────────────────────────────────────────────────────────────
 
     // ── 약관 동의 로직 ──────────────────────────────────────────────
