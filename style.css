@@ -197,26 +197,21 @@ textarea { flex: 1; resize: none; margin-bottom: 1rem; font-size: 1.05rem; line-
     border: 9px solid transparent; border-right-color: #fff;
     left: -18px; top: 21px;
 }
-
-/* Language Toggle */
-.lang-toggle-wrap {
-    display: flex; gap: 0.4rem; margin-top: auto; padding: 1rem 0 0;
-    border-top: 1px solid var(--border-color);
-}
-.lang-btn {
-    flex: 1; padding: 0.5rem 0; border-radius: 8px; border: 1px solid var(--border-color);
-    background: #f8fafc; color: var(--text-muted); font-size: 0.85rem; font-weight: 700;
-    cursor: pointer; transition: all 0.2s; letter-spacing: 0.05em;
-}
-.lang-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }
-.lang-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 2px 6px rgba(37,99,235,0.25); }
 /* ── Language Toggle ── */
+.sidebar {
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar nav {
+    flex: 1;
+}
+
 .lang-toggle-wrap {
     display: flex;
     gap: 0.4rem;
     padding: 1rem 1.2rem 1.5rem;
     border-top: 1px solid var(--border-color);
-    margin-top: auto;
 }
 
 .lang-btn {
