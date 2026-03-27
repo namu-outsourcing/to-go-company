@@ -96,7 +96,7 @@ const app = {
             archiveStatusChange:'Change Status (Restore)', archiveTodo:'Move to Preparing',
             archiveApplied:'Move to Applied', archiveFailKeep:'Keep as Rejected', archivePassKeep:'Keep as Accepted',
             editCompany:'Company', editRole:'Role', editDeadline:'Deadline (leave blank if always open)',
-            editQLabel:'Question', editQSection:'Essay Question Management', editAddQ:'+ Add Question', editSave:'Save Changes',
+            editQLabel:' Question:', editQSection:'Essay Question Management', editAddQ:'+ Add Question', editSave:'Save Changes',
             autoSaveAlert:'All changes are auto-saved 100% safely to local storage!',
             saveSuccess:'Job posted successfully!',
             urlError:'Please enter a valid job posting URL.', contentError:'Please paste the job description text or attach a screenshot.',
@@ -163,7 +163,6 @@ const app = {
     // ─────────────────────────────────────────────────────────────────────
 
     state: { user: null, session: null, jobs: [], editorJobId: null, editorActiveQIndex: 0 },
-    // ... rest of existing state
     tempUploadJobId: null,
     currentModalJobId: null,
     tempParsedSourceUrl: "",
@@ -366,7 +365,6 @@ const app = {
             if (e.target.id === 'job-modal') this.closeModal();
         });
 
-        // Global Paste Event for Screenshots
         document.addEventListener('paste', (e) => {
             const clipboardData = e.clipboardData || window.clipboardData;
             if (!clipboardData) return;
@@ -405,9 +403,7 @@ const app = {
                 }
             }
 
-            // Allow image paste in text areas too so user can paste screenshot into job-text
             if (hasImage && !hasText) {
-                // Prevent default so we don't paste pure image blob text "[object File]" string into textarea
                 e.preventDefault();
             }
         });
@@ -483,7 +479,7 @@ const app = {
         const dataDiv = resultDiv.querySelector('.parsed-data');
         resultDiv.classList.remove('hidden'); loader.classList.remove('hidden'); dataDiv.classList.add('hidden');
 
-try {
+        try {
             const parsed = await callEdgeFunction('gemini-parse-job', {
                 text: textInput,
                 sourceUrl: urlInput,
@@ -691,7 +687,10 @@ try {
         grid.innerHTML = '';
         const archivedJobs = this.state.jobs.filter(j => j.status === 'fail' || j.status === 'pass');
 
-        if (archivedJobs.length === 0) { grid.innerHTML = '<p style="color:var(--text-muted); padding:2rem;">보관된 내역이 없습니다.</p>'; return; }
+        if (archivedJobs.length === 0) {
+            grid.innerHTML = `<p style="color:var(--text-muted); padding:2rem;">${this.t('archiveNoData')}</p>`;
+            return;
+        }
 
         archivedJobs.forEach(job => {
             let pdfBadgeHTML = job.pdfs ? `<div style="margin-top:0.5rem; display:flex; flex-wrap:wrap; gap:0.3rem;">${job.pdfs.map(p => `<div style="display:inline-flex; align-items:center; border:1px solid #cbd5e1; border-radius:6px; background:#fff; padding-right:0.2rem;"><div class="btn-sm" style="border:none; padding:0.3rem 0.5rem; background:transparent;" onclick="app.downloadPdf('${job.id}', '${p.name}', event)"><span class="material-symbols-rounded" style="font-size:1rem;">picture_as_pdf</span> <span style="white-space:normal; word-break:break-all; text-align:left;">${p.name}</span></div><button onclick="app.deletePdf('${job.id}', '${p.name}', event)" style="background:transparent; border:none; color:var(--danger); cursor:pointer; padding:0.2rem; display:flex; align-items:center;" title="삭제"><span class="material-symbols-rounded" style="font-size:1rem;">close</span></button></div>`).join('')}</div>` : '';
@@ -701,13 +700,13 @@ try {
                     <p>${job.role}</p>
                     ${pdfBadgeHTML}
                     <div style="margin-top:1rem; display:flex; flex-direction:column; gap:0.5rem;">
-                        <button class="btn-sm" onclick="app.openEditor('${job.id}')">자소서 열람 (재활용하기)</button>
+                        <button class="btn-sm" onclick="app.openEditor('${job.id}')">${this.t('archiveReuse')}</button>
                         <select class="btn-sm" onchange="app.updateStatus('${job.id}', this.value)">
-                            <option value="fail" disabled selected>상태 변경 (대시보드 복구)</option>
-                            <option value="todo">지원 준비중으로 변경</option>
-                            <option value="applied">지원 완료로 변경</option>
-                            <option value="fail" ${job.status === 'fail' ? 'selected' : ''}>불합격 유지</option>
-                            <option value="pass" ${job.status === 'pass' ? 'selected' : ''}>합격 유지</option>
+                            <option value="" disabled selected>${this.t('archiveStatusChange')}</option>
+                            <option value="todo">${this.t('archiveTodo')}</option>
+                            <option value="applied">${this.t('archiveApplied')}</option>
+                            <option value="fail" ${job.status === 'fail' ? 'selected' : ''}>${this.t('archiveFailKeep')}</option>
+                            <option value="pass" ${job.status === 'pass' ? 'selected' : ''}>${this.t('archivePassKeep')}</option>
                         </select>
                     </div>
                 </div>`;
@@ -905,10 +904,10 @@ try {
     async runSpellCheck() {
         const essayInput = document.getElementById('essay-input');
         const textToFix = essayInput.value;
-        if (!textToFix || textToFix.trim().length <= 5) { alert("먼저 작성창에 글을 작성해주세요."); return; }
+        if (!textToFix || textToFix.trim().length <= 5) { alert(this.t('spellEmpty')); return; }
 
         const statusLabel = document.getElementById('spell-check-status');
-        statusLabel.innerHTML = '<span class="material-symbols-rounded spinning">sync</span> AI가 맞춤법 교정안을 스캔 중...';
+        statusLabel.innerHTML = `<span class="material-symbols-rounded spinning">sync</span> ${this.t('spellScanning')}`;
         statusLabel.className = 'spell-check-status warning';
         document.getElementById('ai-suggestion-box').style.display = 'none';
 
@@ -918,20 +917,20 @@ try {
             const suggBox = document.getElementById('ai-suggestion-box');
             suggBox.style.display = 'block';
             suggBox.innerHTML = `
-                <div style="margin-bottom:0.5rem; color:var(--text-main);"><strong>💡 맞춤법 교정 요약:</strong> <span id="spell-explanation"></span></div>
+                <div style="margin-bottom:0.5rem; color:var(--text-main);"><strong>${this.t('spellSummary')}</strong> <span id="spell-explanation"></span></div>
                 <textarea id="spell-check-edit-area" style="width:100%; min-height:120px; background:#fff; border:1px solid #fbcfe8; padding:1rem; border-radius:6px; margin-bottom:0.8rem; font-size:0.95rem; color:var(--text-main); font-family:inherit; resize:vertical;"></textarea>
-                <div style="font-size:0.85rem; color:var(--text-muted); margin-top:-0.5rem; margin-bottom:0.8rem;">원하는 부분이 있다면 위 텍스트를 직접 수정한 뒤 적용할 수 있습니다.</div>
+                <div style="font-size:0.85rem; color:var(--text-muted); margin-top:-0.5rem; margin-bottom:0.8rem;">${this.t('spellEditHint')}</div>
                 <div class="ai-suggestion-actions">
-                    <button class="btn-sm" style="background:#fff; border:1px solid var(--border-color); color:var(--text-muted);" onclick="document.getElementById('ai-suggestion-box').style.display='none'; document.getElementById('spell-check-status').innerHTML='<span class=\\'material-symbols-rounded\\'>info</span> 교정이 취소되었습니다.'; document.getElementById('spell-check-status').className='spell-check-status warning';">취소하고 닫기</button>
-                    <button class="btn-primary" style="padding:0.5rem 1rem; border-radius:6px;" onclick="app.applySpellCheck()">이 내용으로 덮어씌울게요!</button>
+                    <button class="btn-sm" style="background:#fff; border:1px solid var(--border-color); color:var(--text-muted);" onclick="app.cancelSpellCheck()">${this.t('spellCancel')}</button>
+                    <button class="btn-primary" style="padding:0.5rem 1rem; border-radius:6px;" onclick="app.applySpellCheck()">${this.t('spellApply')}</button>
                 </div>
             `;
             document.getElementById('spell-explanation').textContent = parsed.explanation;
             document.getElementById('spell-check-edit-area').value = parsed.correctedText;
-            statusLabel.innerHTML = '<span class="material-symbols-rounded">check_circle</span> 교정 제안 생성 완료 (내용을 확인해주세요)';
+            statusLabel.innerHTML = `<span class="material-symbols-rounded">check_circle</span> ${this.t('spellDone')}`;
             statusLabel.className = 'spell-check-status ideal';
         } catch (e) {
-            statusLabel.innerHTML = '<span class="material-symbols-rounded">error</span> 검수 에러 발생 (재시도 요망)';
+            statusLabel.innerHTML = `<span class="material-symbols-rounded">error</span> ${this.t('spellError')}`;
             statusLabel.className = 'spell-check-status warning';
         }
     },
@@ -951,6 +950,7 @@ try {
         statusLabel.innerHTML = `<span class="material-symbols-rounded">check_circle</span> ${this.t('spellApplied')}`;
         statusLabel.className = 'spell-check-status ideal';
     },
+
     cancelSpellCheck() {
         document.getElementById('ai-suggestion-box').style.display = 'none';
         const statusLabel = document.getElementById('spell-check-status');
@@ -1003,9 +1003,6 @@ try {
         document.getElementById('import-modal').classList.remove('hidden');
     },
 
-    // ==========================================
-    // 튜토리얼 기능 메서드
-    // ==========================================
     checkTutorial() {
         if (!localStorage.getItem('tutorialCompleted')) {
             setTimeout(() => { this.startTutorial(); }, 500);
