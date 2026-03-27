@@ -15,6 +15,153 @@ async function callEdgeFunction(path, body) {
 }
 
 const app = {
+    // ── Language / i18n ──────────────────────────────────────────────────
+    lang: localStorage.getItem('appLang') || 'ko',
+    _i18n: {
+        ko: {
+            loginDesc: '나만의 취업 준비 공간, 로그인 후 이용하세요.',
+            loginBtn: 'Google로 시작하기',
+            navDashboard:'대시보드', navAddjob:'공고 등록', navEditor:'자소서 에디터', navArchive:'과거 보관함',
+            calWeek:'주간', calMonth:'월간',
+            kanbanTodo:'지원 전', kanbanApplied:'지원 완료', kanbanInterview:'면접 예정',
+            addjobLabel1:'1. 채용 공고 원문 URL', addjobUrlhint:'대시보드에서 바로가기를 위해 필수입니다.',
+            addjobLabel2:'2. 공고 내용 텍스트 복붙 또는 캡처본(스크린샷)',
+            addjobAttach:'사진 첨부', addjobParse:'내용 파싱',
+            parsingLoader:'AI가 공고의 핵심 정보를 추출하고 있습니다...',
+            parsedTitle:'AI 파싱 완료',
+            fieldCompany:'기업명', fieldRole:'직무', fieldDeadline:'마감일', fieldAlways:'상시모집', fieldQuestions:'자기소개서 문항',
+            saveDashboard:'저장하고 대시보드로 이동',
+            editorImport:'불러오기', editorSelectq:'작성할 문항을 왼쪽에서 선택해주세요.',
+            editorReady:'에디터 준비됨', spellCheck:'맞춤법 검사', charCount:'자 (공백포함)',
+            modalOriginal:'원본 공고', modalOriginalLink:'원본 공고 바로가기', modalSearchLink:'관련된 추천 공고 검색',
+            modalUnknown:'알 수 없음', modalNoQ:'등록된 문항이 없습니다.',
+            importTitle:'과거 지원 문항 불러오기', importHint:'불러올 문항을 클릭하면 현재 작성창에 내용이 복사됩니다.',
+            importNoData:'작성 완료된 과거 지원 자소서들 중 재활용할 만한 데이터가 아직은 없습니다.',
+            importConfirm:'해당 자소서 내용을 현재 작성 중인 창에 덮어씌우시겠습니까?',
+            tutSkip:'건너뛰기', tutNext:'다음', tutDone:'완료',
+            statusTodo:'상태: 지원 준비중', statusApplied:'상태: 지원 완료',
+            statusInterview:'상태: 서류합격 / 면접', statusFail:'상태: 불합격 (보관함)', statusPass:'상태: 최종 합격 🎉',
+            btnWrite:'자소서 쓰기', btnViewDocs:'제출 서류 보기', btnAddDoc:'+ 서류 원본 제출', btnAddMore:'+ 서류 추가',
+            alwaysTag:'🌟 상시모집', alwaysLabel:'🌟 상시모집 공고:',
+            archiveNoData:'보관된 내역이 없습니다.', archiveReuse:'자소서 열람 (재활용하기)',
+            archiveStatusChange:'상태 변경 (대시보드 복구)', archiveTodo:'지원 준비중으로 변경',
+            archiveApplied:'지원 완료로 변경', archiveFailKeep:'불합격 유지', archivePassKeep:'합격 유지',
+            editCompany:'기업명', editRole:'직무', editDeadline:'마감일 (상시모집 시 비워주세요)',
+            editQLabel:'번 문항:', editQSection:'자소서 문항 관리', editAddQ:'+ 새 문항 추가', editSave:'수정내용 저장',
+            autoSaveAlert:'데이터 변경 시 로컬 스토리지에 100% 안전하게 자동 저장됩니다!',
+            saveSuccess:'공고가 성공적으로 등록되었습니다!',
+            urlError:'올바른 공고 링크(URL)를 입력해주세요.', contentError:'공고 내용을 텍스트로 복붙하거나 스크린샷으로 첨부해주세요.',
+            deleteConfirm:'서류를 정말 삭제하시겠습니까?',
+            spellEmpty:'먼저 작성창에 글을 작성해주세요.', spellScanning:'AI가 맞춤법 교정안을 스캔 중...',
+            spellSummary:'💡 맞춤법 교정 요약:', spellEditHint:'원하는 부분이 있다면 위 텍스트를 직접 수정한 뒤 적용할 수 있습니다.',
+            spellCancel:'취소하고 닫기', spellApply:'이 내용으로 덮어씌울게요!',
+            spellDone:'교정 제안 생성 완료 (내용을 확인해주세요)', spellCancelled:'교정이 취소되었습니다.',
+            spellApplied:'에디터에 성공적으로 반영/저장됨', spellError:'검수 에러 발생 (재시도 요망)',
+            calDays:['일','월','화','수','목','금','토'],
+            calYearMonth:(y,m)=>`${y}년 ${m+1}월 달력`,
+            calWeekLabel:(y,m,w)=>`${y}년 ${m+1}월 ${w}주차`,
+            tutSteps:[
+                '이곳은 대시보드입니다. 전체 채용 일정과 지원 현황을 한눈에 파악할 수 있어요.',
+                '공고 등록 메뉴에서는 새로운 채용 공고를 등록하고 AI가 자동으로 정보를 분석해줍니다.',
+                '자소서 에디터에서는 자기소개서를 작성하고 AI 맞춤법 검사를 받을 수 있습니다.',
+                '과거 보관함에서는 합격/불합격한 예전 지원 기록과 문항들을 다시 모아볼 수 있습니다.'
+            ]
+        },
+        en: {
+            loginDesc:'Your personal job-hunting workspace. Please log in to continue.',
+            loginBtn:'Sign in with Google',
+            navDashboard:'Dashboard', navAddjob:'Add Job', navEditor:'Essay Editor', navArchive:'Archive',
+            calWeek:'Week', calMonth:'Month',
+            kanbanTodo:'To Apply', kanbanApplied:'Applied', kanbanInterview:'Interview',
+            addjobLabel1:'1. Job Posting URL', addjobUrlhint:'Required for quick-access links on the dashboard.',
+            addjobLabel2:'2. Paste job description text or attach screenshots',
+            addjobAttach:'Attach Image', addjobParse:'Parse with AI',
+            parsingLoader:'AI is extracting key information from the posting...',
+            parsedTitle:'AI Parsing Complete',
+            fieldCompany:'Company', fieldRole:'Role', fieldDeadline:'Deadline', fieldAlways:'Always Open', fieldQuestions:'Essay Questions',
+            saveDashboard:'Save & Go to Dashboard',
+            editorImport:'Import', editorSelectq:'Select a question from the left to start writing.',
+            editorReady:'Editor ready', spellCheck:'Spell Check', charCount:'chars (incl. spaces)',
+            modalOriginal:'Original Posting', modalOriginalLink:'View Original Posting', modalSearchLink:'Search Related Postings',
+            modalUnknown:'Unknown', modalNoQ:'No questions registered.',
+            importTitle:'Import Past Essay', importHint:'Click a question to copy its content into the current editor.',
+            importNoData:'No reusable past essays found yet.',
+            importConfirm:'Overwrite the current editor content with this essay?',
+            tutSkip:'Skip', tutNext:'Next', tutDone:'Done',
+            statusTodo:'Status: Preparing', statusApplied:'Status: Applied',
+            statusInterview:'Status: Interview Scheduled', statusFail:'Status: Rejected (Archive)', statusPass:'Status: Offer Accepted 🎉',
+            btnWrite:'Write Essay', btnViewDocs:'View Submitted Docs', btnAddDoc:'+ Submit Document', btnAddMore:'+ Add Document',
+            alwaysTag:'🌟 Always Open', alwaysLabel:'🌟 Always Open:',
+            archiveNoData:'No archived applications yet.', archiveReuse:'View Essay (Reuse)',
+            archiveStatusChange:'Change Status (Restore)', archiveTodo:'Move to Preparing',
+            archiveApplied:'Move to Applied', archiveFailKeep:'Keep as Rejected', archivePassKeep:'Keep as Accepted',
+            editCompany:'Company', editRole:'Role', editDeadline:'Deadline (leave blank if always open)',
+            editQLabel:'Question', editQSection:'Essay Question Management', editAddQ:'+ Add Question', editSave:'Save Changes',
+            autoSaveAlert:'All changes are auto-saved 100% safely to local storage!',
+            saveSuccess:'Job posted successfully!',
+            urlError:'Please enter a valid job posting URL.', contentError:'Please paste the job description text or attach a screenshot.',
+            deleteConfirm:'Are you sure you want to delete this document?',
+            spellEmpty:'Please write something in the editor first.', spellScanning:'AI is scanning for spelling corrections...',
+            spellSummary:'💡 Spell-check summary:', spellEditHint:'You can edit the text above before applying.',
+            spellCancel:'Cancel', spellApply:'Apply This Version!',
+            spellDone:'Correction ready — please review', spellCancelled:'Spell-check cancelled.',
+            spellApplied:'Successfully applied and saved to editor', spellError:'Error during spell-check (please retry)',
+            calDays:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+            calYearMonth:(y,m)=>{const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return `${M[m]} ${y}`;},
+            calWeekLabel:(y,m,w)=>{const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return `${M[m]} ${y} – Week ${w}`;},
+            tutSteps:[
+                'This is your Dashboard. See your full application schedule and status at a glance.',
+                'In Add Job, register new job postings and let AI automatically extract key info.',
+                'In Essay Editor, write your cover letters and get AI-powered spell-checking.',
+                'In Archive, review past applications (accepted/rejected) and reuse your essays.'
+            ]
+        }
+    },
+    t(key) { return (this._i18n[this.lang] || this._i18n.ko)[key] ?? key; },
+    setLang(lang) {
+        this.lang = lang;
+        localStorage.setItem('appLang', lang);
+        document.documentElement.lang = lang;
+        document.getElementById('lang-ko-btn').classList.toggle('active', lang === 'ko');
+        document.getElementById('lang-en-btn').classList.toggle('active', lang === 'en');
+        this.applyLang();
+        this.renderDashboard(); this.renderCalendar(); this.renderArchive();
+    },
+    applyLang() {
+        const L = this._i18n[this.lang] || this._i18n.ko;
+        // Static HTML elements via CSS class
+        const map = {
+            'i18n-nav-dashboard': L.navDashboard, 'i18n-nav-addjob': L.navAddjob,
+            'i18n-nav-editor': L.navEditor, 'i18n-nav-archive': L.navArchive,
+            'i18n-kanban-todo': L.kanbanTodo, 'i18n-kanban-applied': L.kanbanApplied, 'i18n-kanban-interview': L.kanbanInterview,
+            'i18n-addjob-label1': L.addjobLabel1, 'i18n-addjob-urlhint': L.addjobUrlhint,
+            'i18n-addjob-label2': L.addjobLabel2, 'i18n-addjob-attach': L.addjobAttach, 'i18n-addjob-parse': L.addjobParse,
+            'i18n-parsing-loader': L.parsingLoader, 'i18n-parsed-title': L.parsedTitle,
+            'i18n-field-company': L.fieldCompany, 'i18n-field-role': L.fieldRole, 'i18n-field-deadline': L.fieldDeadline,
+            'i18n-field-always': L.fieldAlways, 'i18n-field-questions': L.fieldQuestions,
+            'i18n-save-dashboard': L.saveDashboard,
+            'i18n-editor-import': L.editorImport, 'i18n-editor-selectq': L.editorSelectq,
+            'i18n-editor-ready': L.editorReady, 'i18n-spell-check': L.spellCheck, 'i18n-char-count': L.charCount,
+            'i18n-modal-original': L.modalOriginal,
+            'i18n-import-title': L.importTitle, 'i18n-import-hint': L.importHint,
+            'i18n-tutorial-skip': L.tutSkip, 'i18n-tutorial-next': L.tutNext,
+        };
+        Object.keys(map).forEach(cls => {
+            document.querySelectorAll('.' + cls).forEach(el => { el.textContent = map[cls]; });
+        });
+        // Login wall
+        const ld = document.getElementById('login-desc'); if (ld) ld.textContent = L.loginDesc;
+        const lb = document.getElementById('login-btn-text'); if (lb) lb.textContent = L.loginBtn;
+        // Cal view btn
+        const calBtn = document.getElementById('cal-view-btn');
+        if (calBtn) calBtn.textContent = this.calViewMode === 'month' ? L.calWeek : L.calMonth;
+        // Essay input placeholder
+        const ea = document.getElementById('essay-input'); if (ea) ea.placeholder = this.lang === 'ko' ? '여기에 자기소개서를 작성하세요...' : 'Write your cover letter here...';
+        const jt = document.getElementById('job-text'); if (jt) jt.placeholder = L.addjobTextPlaceholder || (this.lang === 'ko' ? '여기에 채용공고 텍스트를 통째로 복붙하시거나, 화면 캡처 후 Ctrl+V로 붙여넣어주세요.' : 'Paste the full job posting text here, or press Ctrl+V to paste a screenshot.');
+    },
+    showAutoSaveAlert() { alert(this.t('autoSaveAlert')); },
+    // ─────────────────────────────────────────────────────────────────────
+
     state: { user: null, session: null, jobs: [], editorJobId: null, editorActiveQIndex: 0 },
     // ... rest of existing state
     tempUploadJobId: null,
@@ -23,17 +170,19 @@ const app = {
     pendingImages: [],
     calOffset: 0,
     calViewMode: 'month',
-    tutorialSteps: [
-        { selector: '.nav-item[data-view="dashboard"]', text: "이곳은 대시보드입니다. 전체 채용 일정과 지원 현황을 한눈에 파악할 수 있어요." },
-        { selector: '.nav-item[data-view="add-job"]', text: "공고 등록 메뉴에서는 새로운 채용 공고를 등록하고 AI가 자동으로 정보를 분석해줍니다." },
-        { selector: '.nav-item[data-view="editor"]', text: "자소서 에디터에서는 자기소개서를 작성하고 AI 맞춤법 검사를 받을 수 있습니다." },
-        { selector: '.nav-item[data-view="archive"]', text: "과거 보관함에서는 합격/불합격한 예전 지원 기록과 문항들을 다시 모아볼 수 있습니다." }
-    ],
+    get tutorialSteps() {
+        const steps = this.t('tutSteps');
+        const selectors = ['.nav-item[data-view="dashboard"]','.nav-item[data-view="add-job"]','.nav-item[data-view="editor"]','.nav-item[data-view="archive"]'];
+        return steps.map((text, i) => ({ selector: selectors[i], text }));
+    },
     currentTutorialStep: 0,
 
     _eventsBound: false,
 
     async init() {
+        this.applyLang();
+        document.getElementById('lang-ko-btn')?.classList.toggle('active', this.lang === 'ko');
+        document.getElementById('lang-en-btn')?.classList.toggle('active', this.lang === 'en');
         await this.checkUser();
         if (!this.state.user) {
             this.showLoginWall();
@@ -182,7 +331,7 @@ const app = {
             profileArea.innerHTML = `
                 <button id="login-btn" class="btn-primary" onclick="app.login()" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
                     <span class="material-symbols-rounded">login</span>
-                    Google 로그인
+                    ${this.t('loginBtn')}
                 </button>
             `;
         }
@@ -326,14 +475,8 @@ const app = {
         const urlInput = document.getElementById('job-url').value.trim();
         const textInput = (document.getElementById('job-text') ? document.getElementById('job-text').value.trim() : '');
         
-        if (!urlInput.startsWith('http')) {
-            alert('올바른 공고 링크(URL)를 입력해주세요.');
-            return;
-        }
-        if (!textInput && this.pendingImages.length === 0) {
-            alert('공고 내용을 텍스트로 복붙하거나 스크린샷으로 첨부해주세요.');
-            return;
-        }
+        if (!urlInput.startsWith('http')) { alert(this.t('urlError')); return; }
+        if (!textInput && this.pendingImages.length === 0) { alert(this.t('contentError')); return; }
 
         const resultDiv = document.getElementById('parsing-result');
         const loader = resultDiv.querySelector('.loader');
@@ -398,7 +541,7 @@ try {
             if (eventId) { newJob.googleEventId = eventId; this.saveStorage(); }
         });
         this.saveStorage();
-        alert("공고가 성공적으로 등록되었습니다!");
+        alert(this.t('saveSuccess'));
         document.querySelector('.nav-item[data-view="dashboard"]').click();
         document.getElementById('job-url').value = ''; 
         if(document.getElementById('job-text')) document.getElementById('job-text').value = '';
@@ -428,7 +571,7 @@ try {
         sortedJobs.forEach(job => {
             if (job.status === 'fail' || job.status === 'pass') return;
             let dDayStr = '', dDayClass = 'd-day-warning';
-            if (job.deadline === "상시모집") { dDayStr = "🌟 상시모집"; dDayClass = "d-day-always"; }
+            if (job.deadline === "상시모집") { dDayStr = this.t('alwaysTag'); dDayClass = "d-day-always"; }
             else if (job.deadline) { dDayStr = this.calcDDay(job.deadline); if (dDayStr === "D-Day" || dDayStr.match(/^D-[1-3]$/)) dDayClass = 'd-day-danger'; }
 
             let pdfBadgeHTML = job.pdfs ? `<div style="margin-bottom:1rem; display:flex; flex-wrap:wrap; gap:0.3rem;">${job.pdfs.map(p => `<div style="display:inline-flex; align-items:center; border:1px solid #cbd5e1; border-radius:6px; background:#fff; padding-right:0.2rem;"><div class="btn-sm" style="border:none; padding:0.3rem 0.5rem; background:transparent;" onclick="app.downloadPdf('${job.id}', '${p.name}', event)"><span class="material-symbols-rounded" style="font-size:1rem;">picture_as_pdf</span> <span style="white-space:normal; word-break:break-all; text-align:left;">${p.name}</span></div><button onclick="app.deletePdf('${job.id}', '${p.name}', event)" style="background:transparent; border:none; color:var(--danger); cursor:pointer; padding:0.2rem; display:flex; align-items:center;" title="삭제"><span class="material-symbols-rounded" style="font-size:1rem;">close</span></button></div>`).join('')}</div>` : '';
@@ -442,15 +585,15 @@ try {
                     <p>${job.role}</p>
                     ${pdfBadgeHTML}
                     <div class="actions" style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-                        <button class="btn-sm" onclick="app.openEditor('${job.id}')" style="${isApplied ? 'background:#f0fdf4; color:#166534;' : ''}">${isApplied ? '제출 서류 보기' : '자소서 쓰기'}</button>
-                        <button class="btn-sm" onclick="app.triggerPdfUpload('${job.id}')">${isApplied ? '+ 서류 추가' : '+ 서류 원본 제출'}</button>
+                        <button class="btn-sm" onclick="app.openEditor('${job.id}')" style="${isApplied ? 'background:#f0fdf4; color:#166534;' : ''}">${isApplied ? this.t('btnViewDocs') : this.t('btnWrite')}</button>
+                        <button class="btn-sm" onclick="app.triggerPdfUpload('${job.id}')">${isApplied ? this.t('btnAddMore') : this.t('btnAddDoc')}</button>
                         <div style="flex-basis:100%; height:0; margin:0;"></div>
                         <select class="btn-sm" onchange="app.updateStatus('${job.id}', this.value)" style="width:100%; border-color:#e2e8f0; background:#f8fafc; font-weight:600; margin-top:0.3rem;">
-                            <option value="todo" ${job.status === 'todo' ? 'selected' : ''}>상태: 지원 준비중</option>
-                            <option value="applied" ${job.status === 'applied' ? 'selected' : ''}>상태: 지원 완료</option>
-                            <option value="interview" ${job.status === 'interview' ? 'selected' : ''}>상태: 서류합격 / 면접</option>
-                            <option value="fail" ${job.status === 'fail' ? 'selected' : ''}>상태: 불합격 (보관함)</option>
-                            <option value="pass" ${job.status === 'pass' ? 'selected' : ''}>상태: 최종 합격 🎉</option>
+                            <option value="todo" ${job.status === 'todo' ? 'selected' : ''}>${this.t('statusTodo')}</option>
+                            <option value="applied" ${job.status === 'applied' ? 'selected' : ''}>${this.t('statusApplied')}</option>
+                            <option value="interview" ${job.status === 'interview' ? 'selected' : ''}>${this.t('statusInterview')}</option>
+                            <option value="fail" ${job.status === 'fail' ? 'selected' : ''}>${this.t('statusFail')}</option>
+                            <option value="pass" ${job.status === 'pass' ? 'selected' : ''}>${this.t('statusPass')}</option>
                         </select>
                     </div>
                 </div>`;
@@ -520,7 +663,7 @@ try {
 
     deletePdf(jobId, name, event) {
         event.stopPropagation();
-        if (!confirm(`'${name}' 서류를 정말 삭제하시겠습니까?`)) return;
+        if (!confirm(`'${name}' ${this.t('deleteConfirm')}`)) return;
         const job = this.state.jobs.find(j => j.id === jobId);
         if (job && job.pdfs) {
             job.pdfs = job.pdfs.filter(p => p.name !== name);
@@ -537,7 +680,7 @@ try {
 
     toggleCalendarView() {
         this.calViewMode = this.calViewMode === 'month' ? 'week' : 'month';
-        document.getElementById('cal-view-btn').innerText = this.calViewMode === 'month' ? '주간' : '월간';
+        document.getElementById('cal-view-btn').innerText = this.calViewMode === 'month' ? this.t('calWeek') : this.t('calMonth');
         this.calOffset = 0;
         this.renderCalendar();
     },
@@ -577,20 +720,20 @@ try {
         this.currentModalJobId = id;
         document.getElementById('modal-company').innerText = job.company;
         document.getElementById('modal-role').innerText = job.role;
-        document.getElementById('modal-deadline').innerText = job.deadline || '알 수 없음';
+        document.getElementById('modal-deadline').innerText = job.deadline || this.t('modalUnknown');
 
         const qList = document.getElementById('modal-questions'); qList.innerHTML = '';
         if (job.questions && job.questions.length > 0) {
             job.questions.forEach((q, idx) => { qList.innerHTML += `<li style="margin-bottom:0.5rem;">${idx + 1}. ${q}</li>`; });
-        } else { qList.innerHTML = '<li>등록된 문항이 없습니다.</li>'; }
+        } else { qList.innerHTML = `<li>${this.t('modalNoQ')}</li>`; }
 
         const srcLink = document.getElementById('modal-source-link');
         if (job.sourceUrl && job.sourceUrl.startsWith('http')) {
-            srcLink.href = job.sourceUrl; srcLink.innerHTML = '<span class="material-symbols-rounded" style="font-size:1.1rem">link</span> 원본 공고 바로가기';
+            srcLink.href = job.sourceUrl; srcLink.innerHTML = `<span class="material-symbols-rounded" style="font-size:1.1rem">link</span> ${this.t('modalOriginalLink')}`;
             srcLink.classList.remove('hidden');
         } else {
             srcLink.href = `https://www.google.com/search?q=${encodeURIComponent(job.company + ' ' + job.role + ' 채용공고')}`;
-            srcLink.innerHTML = '<span class="material-symbols-rounded" style="font-size:1.1rem">search</span> 관련된 추천 공고 검색';
+            srcLink.innerHTML = `<span class="material-symbols-rounded" style="font-size:1.1rem">search</span> ${this.t('modalSearchLink')}`;
             srcLink.classList.remove('hidden');
         }
 
@@ -608,14 +751,14 @@ try {
         const editContainer = document.getElementById('modal-body-edit');
         editContainer.classList.remove('hidden');
 
-        let qInputs = job.questions.map((q, i) => `<div style="margin-bottom:0.8rem;"><span style="font-size:0.9rem;color:var(--text-muted);font-weight:600;">${i + 1}번 문항:</span><textarea class="edit-q" style="width:100%; min-height:80px; padding:0.8rem; margin-top:0.3rem; border-radius:6px; border:1px solid var(--border-color); font-family:inherit;">${q}</textarea></div>`).join('');
+        let qInputs = job.questions.map((q, i) => `<div style="margin-bottom:0.8rem;"><span style="font-size:0.9rem;color:var(--text-muted);font-weight:600;">${i + 1}${this.t('editQLabel')}</span><textarea class="edit-q" style="width:100%; min-height:80px; padding:0.8rem; margin-top:0.3rem; border-radius:6px; border:1px solid var(--border-color); font-family:inherit;">${q}</textarea></div>`).join('');
 
         editContainer.innerHTML = `
-            <div style="margin-bottom:1rem;"><label style="font-size:0.9rem;font-weight:600;display:block;margin-bottom:0.3rem;">기업명</label><input type="text" id="edit-m-company" value="${job.company}" style="width:100%; border:1px solid var(--border-color); padding:0.8rem; border-radius:6px;"></div>
-            <div style="margin-bottom:1rem;"><label style="font-size:0.9rem;font-weight:600;display:block;margin-bottom:0.3rem;">직무</label><input type="text" id="edit-m-role" value="${job.role}" style="width:100%; border:1px solid var(--border-color); padding:0.8rem; border-radius:6px;"></div>
-            <div style="margin-bottom:1rem;"><label style="font-size:0.9rem;font-weight:600;display:block;margin-bottom:0.3rem;">마감일 (상시모집 시 비워주세요)</label><input type="date" id="edit-m-deadline" value="${job.deadline === '상시모집' ? '' : job.deadline}" style="width:100%; border:1px solid var(--border-color); padding:0.8rem; border-radius:6px;"></div>
-            <div style="margin-bottom:1rem; padding:1rem; border:1px solid var(--border-color); border-radius:8px; background:#f8fafc;"><label style="font-size:1rem;color:var(--primary);display:block;font-weight:700;margin-bottom:0.8rem;">자소서 문항 관리</label>${qInputs}<button class="btn-sm" onclick="app.addEmptyQuestionInput()" style="margin-top:0.5rem; background:#eff6ff; color:var(--primary); font-weight:600;">+ 새 문항 추가</button></div>
-            <button class="btn-primary" style="width:100%; margin-top:1.5rem; justify-content:center; padding:1.2rem;" onclick="app.saveEditedJobModal()">수정내용 저장</button>
+            <div style="margin-bottom:1rem;"><label style="font-size:0.9rem;font-weight:600;display:block;margin-bottom:0.3rem;">${this.t('editCompany')}</label><input type="text" id="edit-m-company" value="${job.company}" style="width:100%; border:1px solid var(--border-color); padding:0.8rem; border-radius:6px;"></div>
+            <div style="margin-bottom:1rem;"><label style="font-size:0.9rem;font-weight:600;display:block;margin-bottom:0.3rem;">${this.t('editRole')}</label><input type="text" id="edit-m-role" value="${job.role}" style="width:100%; border:1px solid var(--border-color); padding:0.8rem; border-radius:6px;"></div>
+            <div style="margin-bottom:1rem;"><label style="font-size:0.9rem;font-weight:600;display:block;margin-bottom:0.3rem;">${this.t('editDeadline')}</label><input type="date" id="edit-m-deadline" value="${job.deadline === '상시모집' ? '' : job.deadline}" style="width:100%; border:1px solid var(--border-color); padding:0.8rem; border-radius:6px;"></div>
+            <div style="margin-bottom:1rem; padding:1rem; border:1px solid var(--border-color); border-radius:8px; background:#f8fafc;"><label style="font-size:1rem;color:var(--primary);display:block;font-weight:700;margin-bottom:0.8rem;">${this.t('editQSection')}</label>${qInputs}<button class="btn-sm" onclick="app.addEmptyQuestionInput()" style="margin-top:0.5rem; background:#eff6ff; color:var(--primary); font-weight:600;">${this.t('editAddQ')}</button></div>
+            <button class="btn-primary" style="width:100%; margin-top:1.5rem; justify-content:center; padding:1.2rem;" onclick="app.saveEditedJobModal()">${this.t('editSave')}</button>
         `;
     },
 
@@ -624,7 +767,7 @@ try {
         const count = editContainer.querySelectorAll('.edit-q').length;
         const btn = editContainer.querySelector('button.btn-sm');
         const wrapper = document.createElement('div'); wrapper.style.marginBottom = '0.8rem';
-        wrapper.innerHTML = `<span style="font-size:0.9rem;color:var(--text-muted);font-weight:600;">${count + 1}번 문항:</span><textarea class="edit-q" style="width:100%; min-height:80px; padding:0.8rem; margin-top:0.3rem; border-radius:6px; border:1px solid var(--border-color); font-family:inherit;"></textarea>`;
+        wrapper.innerHTML = `<span style="font-size:0.9rem;color:var(--text-muted);font-weight:600;">${count + 1}${this.t('editQLabel')}</span><textarea class="edit-q" style="width:100%; min-height:80px; padding:0.8rem; margin-top:0.3rem; border-radius:6px; border:1px solid var(--border-color); font-family:inherit;"></textarea>`;
         btn.parentNode.insertBefore(wrapper, btn);
     },
 
@@ -659,25 +802,26 @@ try {
         const today = new Date();
 
         const alwaysContainer = document.getElementById('always-recruit-container');
+        const L = this._i18n[this.lang] || this._i18n.ko;
         if (alwaysContainer) {
             const alwaysJobs = this.state.jobs.filter(j => j.deadline === '상시모집' && j.status !== 'fail' && j.status !== 'pass');
             if (alwaysJobs.length > 0) {
                 alwaysContainer.style.display = 'flex';
                 alwaysContainer.style.alignItems = 'center';
                 alwaysContainer.style.flexWrap = 'wrap';
-                let ajHtml = '<strong style="color:var(--primary); font-size:0.9rem; margin-right:0.5rem;">🌟 상시모집 공고:</strong> ';
+                let ajHtml = `<strong style="color:var(--primary); font-size:0.9rem; margin-right:0.5rem;">${this.t('alwaysLabel')}</strong> `;
                 alwaysJobs.forEach(j => { ajHtml += `<span class="cal-job-badge ${j.status}" style="cursor:pointer; display:inline-block; margin-right:0.5rem;" onclick="app.showJobModal('${j.id}')">${j.company}</span>`; });
                 alwaysContainer.innerHTML = ajHtml;
             } else { alwaysContainer.style.display = 'none'; }
         }
 
-        const days = ['일', '월', '화', '수', '목', '금', '토'];
+        const days = L.calDays;
         for (let d of days) calGrid.innerHTML += `<div class="cal-day-header">${d}</div>`;
 
         if (this.calViewMode === 'week') {
             const targetWeekStart = new Date(today);
             targetWeekStart.setDate(today.getDate() - today.getDay() + (this.calOffset * 7));
-            if (calMonthEl) calMonthEl.innerText = `${targetWeekStart.getFullYear()}년 ${targetWeekStart.getMonth() + 1}월 ${Math.ceil(targetWeekStart.getDate() / 7)}주차`;
+            if (calMonthEl) calMonthEl.innerText = L.calWeekLabel(targetWeekStart.getFullYear(), targetWeekStart.getMonth(), Math.ceil(targetWeekStart.getDate() / 7));
 
             for (let i = 0; i < 7; i++) {
                 const targetDay = new Date(targetWeekStart);
@@ -693,7 +837,7 @@ try {
             const targetMonth = new Date(today.getFullYear(), today.getMonth() + this.calOffset, 1);
             const year = targetMonth.getFullYear();
             const month = targetMonth.getMonth();
-            if (calMonthEl) calMonthEl.innerText = `${year}년 ${month + 1}월 달력`;
+            if (calMonthEl) calMonthEl.innerText = L.calYearMonth(year, month);
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
 
@@ -725,7 +869,7 @@ try {
 
     renderEditorQuestions(job) {
         const qList = document.querySelector('.q-list'); qList.innerHTML = '';
-        if (!job.questions || job.questions.length === 0) { qList.innerHTML = '<div class="q-item active" style="white-space:normal; word-break:keep-all;">문항이 없습니다.</div>'; return; }
+        if (!job.questions || job.questions.length === 0) { qList.innerHTML = `<div class="q-item active" style="white-space:normal; word-break:keep-all;">${this.lang === 'ko' ? '문항이 없습니다.' : 'No questions.'}</div>`; return; }
         job.questions.forEach((q, idx) => {
             const div = document.createElement('div');
             div.className = `q-item ${idx === 0 ? 'active' : ''}`;
@@ -746,7 +890,7 @@ try {
         const activeItem = document.querySelector(`.q-item[data-idx="${idx}"]`);
         if (activeItem) activeItem.classList.add('active');
 
-        document.getElementById('current-q-title').innerText = `${idx + 1}. ${job.questions[idx] || '문항 정보 없음'}`;
+        document.getElementById('current-q-title').innerText = `${idx + 1}. ${job.questions[idx] || (this.lang === 'ko' ? '문항 정보 없음' : 'No question info')}`;
         const essayInput = document.getElementById('essay-input');
         const val = (job.answers && job.answers[idx]) ? job.answers[idx] : '';
         essayInput.value = val;
@@ -755,7 +899,7 @@ try {
         if (counter) counter.innerText = val.length;
 
         const st = document.getElementById('spell-check-status');
-        if (st) { st.innerHTML = '<span class="material-symbols-rounded">check_circle</span> 에디터 준비됨'; st.className = 'spell-check-status ideal'; }
+        if (st) { st.innerHTML = `<span class="material-symbols-rounded">check_circle</span> ${this.t('editorReady')}`; st.className = 'spell-check-status ideal'; }
     },
 
     async runSpellCheck() {
@@ -804,8 +948,14 @@ try {
 
         document.getElementById('ai-suggestion-box').style.display = 'none';
         const statusLabel = document.getElementById('spell-check-status');
-        statusLabel.innerHTML = '<span class="material-symbols-rounded">check_circle</span> 에디터에 성공적으로 반영/저장됨';
+        statusLabel.innerHTML = `<span class="material-symbols-rounded">check_circle</span> ${this.t('spellApplied')}`;
         statusLabel.className = 'spell-check-status ideal';
+    },
+    cancelSpellCheck() {
+        document.getElementById('ai-suggestion-box').style.display = 'none';
+        const statusLabel = document.getElementById('spell-check-status');
+        statusLabel.innerHTML = `<span class="material-symbols-rounded">info</span> ${this.t('spellCancelled')}`;
+        statusLabel.className = 'spell-check-status warning';
     },
 
     openImportModal() {
@@ -827,13 +977,13 @@ try {
                     btn.innerHTML = `
                         <div style="font-weight:700; color:var(--text-main); margin-bottom:0.4rem; display:flex; justify-content:space-between; align-items:center;">
                             <span>[${job.company}] ${job.role}</span>
-                            <span style="color:var(--primary); font-size:0.85rem; font-weight:600; padding:0.2rem 0.5rem; background:#fff; border-radius:12px; border:1px solid var(--primary);">${ans.length}자</span>
+                            <span style="color:var(--primary); font-size:0.85rem; font-weight:600; padding:0.2rem 0.5rem; background:#fff; border-radius:12px; border:1px solid var(--primary);">${ans.length}${this.lang === 'ko' ? '자' : ' chars'}</span>
                         </div>
                         <div style="font-size:0.95rem; font-weight:600; margin-bottom:0.8rem; color:var(--text-muted); border-bottom:1px solid #cbd5e1; padding-bottom:0.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">Q. ${q}</div>
                         <div style="font-size:0.95rem; color:var(--text-main); line-height:1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${ans}</div>
                     `;
                     btn.onclick = () => {
-                        if (confirm("해당 자소서 내용을 현재 작성 중인 창에 덮어씌우시겠습니까?")) {
+                        if (confirm(this.t('importConfirm'))) {
                             const essayInput = document.getElementById('essay-input');
                             essayInput.value = ans;
                             const currJob = this.state.jobs.find(j => j.id === this.state.editorJobId);
@@ -848,7 +998,7 @@ try {
         });
 
         if (!hasData) {
-            listDiv.innerHTML = '<p style="padding:3rem; text-align:center; color:var(--text-muted); font-size:1.1rem;">작성 완료된 과거 지원 자소서들 중 재활용할 만한 데이터가 아직은 없습니다.</p>';
+            listDiv.innerHTML = `<p style="padding:3rem; text-align:center; color:var(--text-muted); font-size:1.1rem;">${this.t('importNoData')}</p>`;
         }
         document.getElementById('import-modal').classList.remove('hidden');
     },
@@ -889,7 +1039,7 @@ try {
                 bubble.style.left = (rect.right + 25) + 'px';
             }
             if (nextBtn) {
-                nextBtn.innerText = this.currentTutorialStep === this.tutorialSteps.length - 1 ? '완료' : '다음';
+                nextBtn.innerText = this.currentTutorialStep === this.tutorialSteps.length - 1 ? this.t('tutDone') : this.t('tutNext');
             }
         }
     },
