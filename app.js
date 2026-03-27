@@ -211,7 +211,7 @@ const app = {
     hideLoginWall() {
         const wall = document.getElementById('login-wall');
         wall.style.display = 'none';
-        document.querySelector('.app-container').style.display = '';
+        document.querySelector('.app-container').style.display = 'flex';
     },
 
     async loadFromSupabase() {
