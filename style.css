@@ -23,11 +23,12 @@ body {
     width: 260px; background: var(--bg-panel); border-right: 1px solid var(--border-color);
     display: flex; flex-direction: column; padding: 2rem 1rem;
     box-shadow: 2px 0 10px rgba(0,0,0,0.02);
+    height: 100vh;
 }
 .logo { display: flex; align-items: center; gap: 0.75rem; padding: 0 1rem; margin-bottom: 3rem; color: var(--text-main); }
 .logo span { font-size: 2rem; color: var(--primary); }
 .logo h2 { font-size: 1.5rem; font-weight: 700; color: var(--text-main); letter-spacing: -0.5px; }
-.sidebar nav { display: flex; flex-direction: column; gap: 0.5rem; }
+.sidebar nav { display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
 .nav-item { display: flex; align-items: center; gap: 1rem; padding: 1rem; border-radius: 12px; color: var(--text-muted); text-decoration: none; transition: all 0.2s ease; font-weight: 500; }
 .nav-item:hover { background: #f1f5f9; color: var(--text-main); }
 .nav-item.active { background: #eff6ff; color: var(--primary); font-weight: 600; }
@@ -160,9 +161,7 @@ textarea { flex: 1; resize: none; margin-bottom: 1rem; font-size: 1.05rem; line-
     display: flex; gap: 0.5rem; margin-top: 0.8rem; justify-content: flex-end;
 }
 
-/* ========================================================= */
-/* Tutorial Overlay Styles                                   */
-/* ========================================================= */
+/* Tutorial Overlay Styles */
 #tutorial-overlay {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
     z-index: 2000; pointer-events: none;
@@ -197,17 +196,8 @@ textarea { flex: 1; resize: none; margin-bottom: 1rem; font-size: 1.05rem; line-
     border: 9px solid transparent; border-right-color: #fff;
     left: -18px; top: 21px;
 }
+
 /* ── Language Toggle ── */
-.sidebar {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-}
-
-.sidebar nav {
-    flex: 1;
-}
-
 .lang-toggle-wrap {
     display: flex;
     gap: 0.4rem;
@@ -215,7 +205,6 @@ textarea { flex: 1; resize: none; margin-bottom: 1rem; font-size: 1.05rem; line-
     border-top: 1px solid var(--border-color);
     margin-top: auto;
 }
-
 .lang-btn {
     flex: 1;
     padding: 0.4rem 0;
@@ -228,12 +217,10 @@ textarea { flex: 1; resize: none; margin-bottom: 1rem; font-size: 1.05rem; line-
     cursor: pointer;
     transition: all 0.2s;
 }
-
 .lang-btn:hover {
-    background: var(--bg-hover);
+    background: #f1f5f9;
     color: var(--text-main);
 }
-
 .lang-btn.active {
     background: var(--primary);
     color: #fff;
