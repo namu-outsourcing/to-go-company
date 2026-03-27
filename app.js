@@ -205,18 +205,6 @@ const app = {
         btn.style.cursor = ok ? 'pointer' : 'not-allowed';
         btn.style.boxShadow = ok ? '0 2px 4px rgba(37,99,235,0.2)' : 'none';
     },
-    openTermsModal(type) {
-    const modal = document.getElementById('terms-modal');
-    const title = document.getElementById('terms-modal-title');
-    const body = document.getElementById('terms-modal-body');
-    if (!modal || !title || !body) return;
-
-    // 현재 언어 설정에 맞는 제목과 내용을 가져옴
-    title.textContent = type === 'terms' ? this.t('termsServiceTitle') : this.t('termsPrivacyTitle');
-    body.textContent = type === 'terms' ? this.t('termsServiceBody') : this.t('termsPrivacyBody');
-    
-    modal.style.display = 'flex';
-},
     // ──────────────────────────────────────────────────────────────────
 
     // ── 약관 동의 로직 ──────────────────────────────────────────────
@@ -247,41 +235,19 @@ const app = {
     },
 
     openTermsModal(type) {
-        const modal = document.getElementById('terms-modal');
-        const title = document.getElementById('terms-modal-title');
-        const body = document.getElementById('terms-modal-body');
-        if (!modal) return;
-        if (type === 'terms') {
-            title.textContent = this.lang === 'ko' ? '서비스 이용약관' : 'Terms of Service';
-            body.innerHTML = `
-                <p style="margin-bottom:1rem;"><strong>제1조 (목적)</strong><br>
-                본 약관은 Career Log(이하 "서비스")의 이용과 관련하여 서비스와 이용자 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.</p>
-                <p style="margin-bottom:1rem;"><strong>제2조 (서비스 이용)</strong><br>
-                이용자는 본 약관에 동의함으로써 서비스를 이용할 수 있으며, 서비스는 취업 준비를 위한 공고 관리, 자기소개서 작성 등의 기능을 제공합니다.</p>
-                <p style="margin-bottom:1rem;"><strong>제3조 (개인정보 보호)</strong><br>
-                서비스는 이용자의 개인정보를 관련 법령에 따라 보호하며, 별도의 개인정보 처리방침에 따라 처리합니다.</p>
-                <p style="margin-bottom:1rem;"><strong>제4조 (책임 제한)</strong><br>
-                서비스는 이용자가 제공한 정보의 정확성에 대해 책임을 지지 않으며, AI 분석 결과는 참고용으로만 활용하시기 바랍니다.</p>
-                <p><strong>제5조 (약관 변경)</strong><br>
-                서비스는 필요 시 본 약관을 변경할 수 있으며, 변경된 약관은 서비스 내 공지를 통해 안내합니다.</p>
-            `;
-        } else {
-            title.textContent = this.lang === 'ko' ? '개인정보 수집 및 이용' : 'Privacy Policy';
-            body.innerHTML = `
-                <p style="margin-bottom:1rem;"><strong>수집 항목</strong><br>
-                이메일 주소, 이름, 프로필 사진 (Google 로그인 시 제공되는 정보)</p>
-                <p style="margin-bottom:1rem;"><strong>수집 목적</strong><br>
-                회원 식별 및 서비스 제공, 취업 준비 데이터(공고, 자기소개서 등) 저장 및 관리</p>
-                <p style="margin-bottom:1rem;"><strong>보유 기간</strong><br>
-                서비스 탈퇴 시까지 보유하며, 탈퇴 후 즉시 삭제합니다.</p>
-                <p style="margin-bottom:1rem;"><strong>제3자 제공</strong><br>
-                수집된 개인정보는 법령에 의한 경우를 제외하고 제3자에게 제공하지 않습니다.</p>
-                <p><strong>동의 거부 권리</strong><br>
-                이용자는 개인정보 수집·이용에 대한 동의를 거부할 권리가 있으나, 거부 시 서비스 이용이 제한될 수 있습니다.</p>
-            `;
-        }
-        modal.classList.remove('hidden');
-    },
+    const modal = document.getElementById('terms-modal');
+    const title = document.getElementById('terms-modal-title');
+    const body = document.getElementById('terms-modal-body');
+    if (!modal || !title || !body) return;
+
+    // 상단에 정의된 i18n 텍스트를 불러와서 채워넣음
+    title.textContent = type === 'terms' ? this.t('termsServiceTitle') : this.t('termsPrivacyTitle');
+    body.textContent = type === 'terms' ? this.t('termsServiceBody') : this.t('termsPrivacyBody');
+    
+    // 강제로 화면에 보이게 함
+    modal.style.display = 'flex';
+    modal.classList.remove('hidden');
+},
     // ─────────────────────────────────────────────────────────────────
 
     // ─────────────────────────────────────────────────────────────────────
