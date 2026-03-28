@@ -125,19 +125,17 @@
                 <div class="dashboard-layout">
                     <!-- Calendar Section -->
                     <div class="calendar-section glass-panel">
-                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
                             <h3 id="calendar-month" style="margin:0;">로딩중...</h3>
-                            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.4rem;">
+                            <div style="display:flex; gap:0.5rem; align-items:center;">
+                                <button class="btn-sm" onclick="app.changeCalendarMonth(-1)" title="이전 달/주"><span class="material-symbols-rounded">chevron_left</span></button>
+                                <button class="btn-sm" onclick="app.changeCalendarMonth(1)" title="다음 달/주"><span class="material-symbols-rounded">chevron_right</span></button>
+                                <button class="btn-sm" id="cal-view-btn" onclick="app.toggleCalendarView()" style="font-weight:600; width:65px;">주간</button>
                                 <a href="https://calendar.google.com" target="_blank" rel="noopener noreferrer" class="btn-sm" style="text-decoration:none; background:#eff6ff; color:var(--primary); font-weight:600; display:flex; align-items:center; gap:0.4rem; padding:0.4rem 0.9rem; white-space:nowrap;" title="구글 캘린더 열기">
                                     <span class="material-symbols-rounded" style="font-size:1.1rem;">calendar_month</span>
                                     <span>구글 캘린더 바로가기</span>
                                     <span class="material-symbols-rounded" style="font-size:1rem;">open_in_new</span>
                                 </a>
-                                <div style="display:flex; gap:0.5rem;">
-                                    <button class="btn-sm" onclick="app.changeCalendarMonth(-1)" title="이전 달/주"><span class="material-symbols-rounded">chevron_left</span></button>
-                                    <button class="btn-sm" onclick="app.changeCalendarMonth(1)" title="다음 달/주"><span class="material-symbols-rounded">chevron_right</span></button>
-                                    <button class="btn-sm" id="cal-view-btn" onclick="app.toggleCalendarView()" style="font-weight:600; width:65px;">주간</button>
-                                </div>
                             </div>
                         </div>
                         <div id="always-recruit-container" style="margin-bottom:1rem; padding:0.8rem; background:rgba(99, 102, 241, 0.1); border: 1px dashed rgba(99, 102, 241, 0.3); border-radius:8px; display:none;"></div>
