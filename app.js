@@ -668,8 +668,10 @@ const app = {
 
             const cardHTML = `
                 <div class="card ${job.status === 'interview' ? 'highlight' : ''}">
-                    <div class="card-header">${dDayStr ? `<span class="d-day ${dDayClass}">${dDayStr}</span>` : ''}</div>
-                    <h4 style="cursor:pointer; color:var(--primary);" title="상세 정보" onclick="app.showJobModal('${job.id}')">${job.company} <span class="material-symbols-rounded" style="font-size:1.1rem; vertical-align:middle; color:var(--text-muted);">open_in_new</span></h4>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+                        <h4 style="cursor:pointer; color:var(--primary); margin:0;" title="상세 정보" onclick="app.showJobModal('${job.id}')">${job.company} <span class="material-symbols-rounded" style="font-size:1.1rem; vertical-align:middle; color:var(--text-muted);">open_in_new</span></h4>
+                        ${dDayStr ? `<span class="d-day ${dDayClass}">${dDayStr}</span>` : ''}
+                    </div>
                     <p>${job.role}</p>
                     ${pdfBadgeHTML}
                     <div class="actions" style="display:flex; gap:0.5rem; flex-wrap:wrap;">
