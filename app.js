@@ -59,6 +59,7 @@ const app = {
             saveSuccess:'공고가 성공적으로 등록되었습니다!',
             urlError:'올바른 공고 링크(URL)를 입력해주세요.', contentError:'공고 내용을 텍스트로 복붙하거나 스크린샷으로 첨부해주세요.',
             deleteConfirm:'서류를 정말 삭제하시겠습니까?',
+            jobDeleteConfirm:'공고를 정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
             spellEmpty:'먼저 작성창에 글을 작성해주세요.', spellScanning:'AI가 맞춤법 교정안을 스캔 중...',
             spellSummary:'💡 맞춤법 교정 요약:', spellEditHint:'원하는 부분이 있다면 위 텍스트를 직접 수정한 뒤 적용할 수 있습니다.',
             spellCancel:'취소하고 닫기', spellApply:'이 내용으로 덮어씌울게요!',
@@ -115,6 +116,7 @@ const app = {
             saveSuccess:'Job posted successfully!',
             urlError:'Please enter a valid job posting URL.', contentError:'Please paste the job description text or attach a screenshot.',
             deleteConfirm:'Are you sure you want to delete this document?',
+            jobDeleteConfirm:'Are you sure you want to delete this job? This action cannot be undone.',
             spellEmpty:'Please write something in the editor first.', spellScanning:'AI is scanning for spelling corrections...',
             spellSummary:'💡 Spell-check summary:', spellEditHint:'You can edit the text above before applying.',
             spellCancel:'Cancel', spellApply:'Apply This Version!',
@@ -878,6 +880,28 @@ const app = {
         this.updateCalendarEvent(job).then(() => this.saveStorage());
         this.saveStorage(); this.renderDashboard(); this.renderCalendar(); this.showJobModal(job.id);
         if (this.state.editorJobId === job.id) this.openEditor(job.id);
+    },
+
+    async deleteJobInModal() {
+        const job = this.state.jobs.find(j => j.id === this.currentModalJobId);
+        if (!job) return;
+        if (!confirm(`'${job.company}' ${this.t('jobDeleteConfirm')}`)) return;
+        if (job.googleEventId) {
+            const token = await this.getGoogleAccessToken();
+            if (token) {
+                try {
+                    await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${job.googleEventId}`, {
+                        method: 'DELETE',
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                } catch (e) { console.error('Calendar delete error:', e); }
+            }
+        }
+        this.state.jobs = this.state.jobs.filter(j => j.id !== this.currentModalJobId);
+        this.saveStorage();
+        this.renderDashboard();
+        this.renderCalendar();
+        this.closeModal();
     },
 
     closeModal() { document.getElementById('job-modal').classList.add('hidden'); },
