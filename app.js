@@ -415,11 +415,14 @@ const app = {
         if (!this.state.user) return;
         supabase
             .from('user_data')
-            .upsert({ user_id: this.state.user.id, jobs: this.state.jobs, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
-            .then(({ error }) => {
+            .upsert({ user_id: this.state.user.id, jobs: this.state.jobs, updated_at: new Date().toISOString() }, { onConflict: 'user_id', count: 'exact' })
+            .then(({ error, count }) => {
+                console.log('[saveStorage] error:', error, '| count:', count, '| user:', this.state.user?.id);
                 if (error) {
                     console.error('Save error:', error);
                     alert('저장 실패: ' + error.message);
+                } else if (count === 0) {
+                    alert('저장 시도했지만 DB에 반영 안됨 (count=0). 재로그인 후 다시 시도해주세요.');
                 }
             });
     },
