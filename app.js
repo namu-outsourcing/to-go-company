@@ -425,20 +425,10 @@ const app = {
 
     saveStorage() {
         if (!this.state.user) return;
-        console.log('[saveStorage] 호출됨, user:', this.state.user?.id, 'jobs:', this.state.jobs?.length);
-        try {
-            const q = supabase.from('user_data');
-            console.log('[saveStorage] from() 성공:', typeof q);
-            q.upsert({ user_id: this.state.user.id, jobs: this.state.jobs, updated_at: new Date().toISOString() }, { onConflict: 'user_id', count: 'exact' })
-                .then(({ error, count }) => {
-                    console.log('[saveStorage] result → error:', error, '| count:', count);
-                    if (error) alert('저장 실패: ' + error.message);
-                    else if (count === 0) alert('DB 반영 안됨 (count=0)');
-                })
-                .catch(e => console.error('[saveStorage] promise catch:', e));
-        } catch (e) {
-            console.error('[saveStorage] 동기 에러:', e);
-        }
+        supabase
+            .from('user_data')
+            .upsert({ user_id: this.state.user.id, jobs: this.state.jobs, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+            .then(({ error }) => { if (error) console.error('Save error:', error); });
     },
 
     bindEvents() {
