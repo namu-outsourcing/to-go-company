@@ -309,7 +309,7 @@ const app = {
     async loadFromSupabase() {
         const { data, error } = await supabase
             .from('user_data')
-            .select('jobs')
+            .select('jobs, google_refresh_token')
             .eq('user_id', this.state.user.id)
             .single();
         if (error && error.code !== 'PGRST116') {
@@ -317,6 +317,9 @@ const app = {
             return;
         }
         this.state.jobs = data?.jobs || [];
+        if (data?.google_refresh_token) {
+            this.state.googleRefreshToken = data.google_refresh_token;
+        }
     },
 
     async checkUser() {
@@ -332,11 +335,15 @@ const app = {
             if (this.state.user) {
                 this.hideLoginWall();
                 if (_event === 'SIGNED_IN' || _event === 'INITIAL_SESSION') {
+                    if (_event === 'SIGNED_IN' && session?.provider_refresh_token) {
+                        await this.saveGoogleRefreshToken(session.provider_refresh_token);
+                    }
                     await this.loadFromSupabase();
                     this._initUI();
                 }
             } else {
                 this.state.jobs = [];
+                this.state.googleRefreshToken = null;
                 this.showLoginWall();
             }
         });
@@ -357,9 +364,17 @@ const app = {
         if (error) console.error('Login Error:', error.message);
     },
 
+    async saveGoogleRefreshToken(token) {
+        if (!this.state.user || !token) return;
+        this.state.googleRefreshToken = token;
+        await supabase
+            .from('user_data')
+            .upsert({ user_id: this.state.user.id, google_refresh_token: token }, { onConflict: 'user_id' });
+    },
+
     async getGoogleRefreshToken() {
         const { data: { session } } = await supabase.auth.getSession();
-        return session?.provider_refresh_token ?? null;
+        return session?.provider_refresh_token ?? this.state.googleRefreshToken ?? null;
     },
 
     async createCalendarEvent(job) {
