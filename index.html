@@ -127,10 +127,15 @@
                     <div class="calendar-section glass-panel">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
                             <h3 id="calendar-month" style="margin:0;">로딩중...</h3>
-                            <div style="display:flex; gap:0.5rem;">
+                            <div style="display:flex; gap:0.5rem; align-items:center;">
                                 <button class="btn-sm" onclick="app.changeCalendarMonth(-1)" title="이전 달/주"><span class="material-symbols-rounded">chevron_left</span></button>
                                 <button class="btn-sm" onclick="app.changeCalendarMonth(1)" title="다음 달/주"><span class="material-symbols-rounded">chevron_right</span></button>
                                 <button class="btn-sm" id="cal-view-btn" onclick="app.toggleCalendarView()" style="font-weight:600; width:65px;">주간</button>
+                                <a href="https://calendar.google.com" target="_blank" rel="noopener noreferrer" class="btn-sm" style="text-decoration:none; background:#eff6ff; color:var(--primary); font-weight:600; display:flex; align-items:center; gap:0.4rem; padding:0.4rem 0.9rem; white-space:nowrap;" title="구글 캘린더 열기">
+                                    <span class="material-symbols-rounded" style="font-size:1.1rem;">calendar_month</span>
+                                    <span>구글 캘린더 바로가기</span>
+                                    <span class="material-symbols-rounded" style="font-size:1rem;">open_in_new</span>
+                                </a>
                             </div>
                         </div>
                         <div id="always-recruit-container" style="margin-bottom:1rem; padding:0.8rem; background:rgba(99, 102, 241, 0.1); border: 1px dashed rgba(99, 102, 241, 0.3); border-radius:8px; display:none;"></div>
@@ -282,9 +287,12 @@
             <header style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1rem;">
                 <h2 id="modal-company" style="font-size: 1.5rem; margin:0; font-weight:700;">기업명</h2>
                 <div style="display:flex; gap:0.5rem; align-items:center;">
-                    <a id="modal-source-link" href="#" target="_blank" class="btn-sm hidden" style="background:#eff6ff; color:var(--primary); border:none; border-radius:12px; text-decoration:none;"><span class="material-symbols-rounded" style="font-size:1.1rem">link</span> <span class="i18n-modal-original">원본 공고</span></a>
-                    <button class="btn-sm" onclick="app.editJobInModal()" style="border:none; background:transparent;" title="제출 정보 수정"><span class="material-symbols-rounded">edit</span></button>
-                    <button onclick="app.closeModal()" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer;" class="material-symbols-rounded">close</button>
+                    <a id="modal-source-link" href="#" target="_blank" class="btn-sm hidden" style="background:#eff6ff; color:var(--primary); border:none; border-radius:12px; text-decoration:none; white-space:nowrap;"><span class="material-symbols-rounded" style="font-size:1.1rem">link</span> <span class="i18n-modal-original">공고 원문 보기</span></a>
+                    <div style="display:flex; gap:0.1rem; align-items:center;">
+                        <button class="btn-sm" onclick="app.editJobInModal()" style="border:none; background:transparent;" title="제출 정보 수정"><span class="material-symbols-rounded">edit</span></button>
+                        <button class="btn-sm" onclick="app.deleteJobInModal()" style="border:none; background:transparent; color:var(--danger);" title="공고 삭제"><span class="material-symbols-rounded">delete</span></button>
+                        <button onclick="app.closeModal()" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer;" class="material-symbols-rounded">close</button>
+                    </div>
                 </div>
             </header>
             <div class="modal-body" id="modal-body-view" style="color: var(--text-main); max-height: 60vh; overflow-y: auto;">
