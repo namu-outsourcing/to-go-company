@@ -425,10 +425,15 @@ const app = {
 
     saveStorage() {
         if (!this.state.user) return;
-        supabase
-            .from('user_data')
-            .upsert({ user_id: this.state.user.id, jobs: this.state.jobs, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
-            .then(({ error }) => { if (error) console.error('Save error:', error); });
+        try {
+            supabase
+                .from('user_data')
+                .upsert({ user_id: this.state.user.id, jobs: this.state.jobs, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+                .then(({ error }) => { if (error) console.error('Save error:', error); })
+                .catch(e => console.error('Save catch:', e));
+        } catch(e) {
+            console.error('Save sync error:', e);
+        }
     },
 
     bindEvents() {
