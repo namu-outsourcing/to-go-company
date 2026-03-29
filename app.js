@@ -336,7 +336,8 @@ const app = {
                 this.hideLoginWall();
                 if (_event === 'SIGNED_IN' || _event === 'INITIAL_SESSION') {
                     if (_event === 'SIGNED_IN' && session?.provider_refresh_token) {
-                        await this.saveGoogleRefreshToken(session.provider_refresh_token);
+                        try { await this.saveGoogleRefreshToken(session.provider_refresh_token); }
+                        catch (e) { console.error('saveGoogleRefreshToken error:', e); }
                     }
                     await this.loadFromSupabase();
                     this._initUI();
