@@ -415,8 +415,13 @@ const app = {
         if (!this.state.user) return;
         supabase
             .from('user_data')
-            .upsert({ user_id: this.state.user.id, jobs: this.state.jobs, updated_at: new Date().toISOString() })
-            .then(({ error }) => { if (error) console.error('Save error:', error); });
+            .upsert({ user_id: this.state.user.id, jobs: this.state.jobs, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+            .then(({ error }) => {
+                if (error) {
+                    console.error('Save error:', error);
+                    alert('저장 실패: ' + error.message);
+                }
+            });
     },
 
     bindEvents() {
