@@ -760,8 +760,7 @@ const app = {
                 const userName = this.state.user?.user_metadata?.full_name || this.state.user?.email?.split('@')[0] || '제출자';
                 const newFileName = `[${job.company}] ${job.role}_${userName}_${docType}_${today}${count > 1 ? ('_' + count) : ''}.pdf`;
 
-                const safeFileName = newFileName.replace(/[\[\]\s\/]/g, '_');
-                const storagePath = `${this.state.user.id}/${job.id}/${safeFileName}`;
+                const storagePath = `${this.state.user.id}/${job.id}/${Date.now()}.pdf`;
                 const { error: uploadError } = await supabase.storage
                     .from('pdfs')
                     .upload(storagePath, file, { contentType: 'application/pdf', upsert: true });
