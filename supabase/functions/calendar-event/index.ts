@@ -5,7 +5,7 @@ const GOOGLE_CLIENT_SECRET = Deno.env.get('GOOGLE_CLIENT_SECRET')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 
-const CALENDAR_NAME = '취준 로그'
+const CALENDAR_NAME = 'career log'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,8 +24,11 @@ async function refreshAccessToken(refreshToken: string): Promise<string | null> 
     }),
   })
   const data = await res.json()
-  if (!data.access_token) console.error('Token refresh failed:', JSON.stringify(data))
-  return data.access_token ?? null
+  if (!data.access_token) {
+    console.error('Token refresh failed:', JSON.stringify(data))
+    return null
+  }
+  return data.access_token
 }
 
 async function getOrCreateCalendar(accessToken: string): Promise<string> {
@@ -33,17 +36,31 @@ async function getOrCreateCalendar(accessToken: string): Promise<string> {
   const listRes = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
-  const listData = await listRes.json()
+  
+  if (!listRes.ok) {
+    const err = await listRes.text()
+    console.error('calendarList error:', err)
+    throw new Error('Google Calendar List 조회 실패')
+  }
 
+  const listData = await listRes.json()
   const existing = (listData.items ?? []).find((c: any) => c.summary === CALENDAR_NAME)
   if (existing) return existing.id
 
   // 없으면 새로 생성
+  console.log(`Creating new calendar: ${CALENDAR_NAME}`)
   const createRes = await fetch('https://www.googleapis.com/calendar/v3/calendars', {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ summary: CALENDAR_NAME }),
   })
+  
+  if (!createRes.ok) {
+    const err = await createRes.text()
+    console.error('calendar create error:', err)
+    throw new Error('Google Calendar 생성 실패')
+  }
+
   const created = await createRes.json()
   return created.id
 }
@@ -57,11 +74,10 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) return new Response('Unauthorized', { status: 401, headers: corsHeaders })
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } }
-    })
-    const { data: { user }, error } = await supabase.auth.getUser()
-    if (error || !user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
+    const token = authHeader.replace('Bearer ', '')
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    const { data: { user }, error } = await supabase.auth.getUser(token)
+    if (error || !user) return new Response(JSON.stringify({ error: 'Unauthorized', detail: error?.message }), { status: 401, headers: corsHeaders })
 
     const { operation, job, refreshToken, eventId } = await req.json()
 

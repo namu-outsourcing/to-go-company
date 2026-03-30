@@ -409,11 +409,21 @@ const app = {
     async createCalendarEvent(job) {
         if (!job.deadline || job.deadline === '상시모집') return null;
         const refreshToken = await this.getGoogleRefreshToken();
-        if (!refreshToken) { console.warn('Calendar: refresh_token 없음, 재로그인 필요'); return null; }
+        if (!refreshToken) { 
+            console.warn('Calendar: refresh_token 없음, 구글 캘린더 연동을 위해 재로그인이 필요할 수 있습니다.'); 
+            return null; 
+        }
         try {
             const data = await callEdgeFunction('calendar-event', { operation: 'create', job, refreshToken });
+            if (data.error) {
+                console.error('Calendar create error from function:', data.error);
+                return null;
+            }
             return data.eventId ?? null;
-        } catch (e) { console.error('Calendar create error:', e); return null; }
+        } catch (e) { 
+            console.error('Calendar create exception:', e); 
+            return null; 
+        }
     },
 
     async updateCalendarEvent(job) {
