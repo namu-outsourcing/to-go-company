@@ -3,7 +3,8 @@ import { supabase } from './supabase.js';
 const SUPABASE_FUNCTIONS_URL = 'https://hixuqxymfkqwtpgpowcz.supabase.co/functions/v1';
 
 async function callEdgeFunction(path, body) {
-    const token = app.state.session?.access_token;
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
     if (!token) throw new Error('로그인 세션이 없습니다. 다시 로그인해주세요.');
     const resp = await fetch(`${SUPABASE_FUNCTIONS_URL}/${path}`, {
         method: 'POST',
@@ -383,7 +384,7 @@ const app = {
             provider: 'google',
             options: {
                 redirectTo: window.location.origin,
-                scopes: 'https://www.googleapis.com/auth/calendar.events',
+                scopes: 'https://www.googleapis.com/auth/calendar',
                 queryParams: { access_type: 'offline', prompt: 'consent' }
             }
         });

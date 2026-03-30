@@ -5,6 +5,8 @@ const GOOGLE_CLIENT_SECRET = Deno.env.get('GOOGLE_CLIENT_SECRET')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 
+const CALENDAR_NAME = '취준 로그'
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -22,7 +24,28 @@ async function refreshAccessToken(refreshToken: string): Promise<string | null> 
     }),
   })
   const data = await res.json()
+  if (!data.access_token) console.error('Token refresh failed:', JSON.stringify(data))
   return data.access_token ?? null
+}
+
+async function getOrCreateCalendar(accessToken: string): Promise<string> {
+  // 캘린더 목록 조회
+  const listRes = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  const listData = await listRes.json()
+
+  const existing = (listData.items ?? []).find((c: any) => c.summary === CALENDAR_NAME)
+  if (existing) return existing.id
+
+  // 없으면 새로 생성
+  const createRes = await fetch('https://www.googleapis.com/calendar/v3/calendars', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ summary: CALENDAR_NAME }),
+  })
+  const created = await createRes.json()
+  return created.id
 }
 
 Deno.serve(async (req) => {
@@ -48,8 +71,10 @@ Deno.serve(async (req) => {
 
     const accessToken = await refreshAccessToken(refreshToken)
     if (!accessToken) {
-      return new Response(JSON.stringify({ error: 'Google 액세스 토큰 발급 실패' }), { status: 401, headers: corsHeaders })
+      return new Response(JSON.stringify({ error: 'Google 액세스 토큰 발급 실패', hint: 'Edge Function 로그 확인' }), { status: 401, headers: corsHeaders })
     }
+
+    const calendarId = await getOrCreateCalendar(accessToken)
 
     const event = {
       summary: `[취준] ${job.company} - ${job.role} 마감`,
@@ -59,7 +84,7 @@ Deno.serve(async (req) => {
     }
 
     if (operation === 'create') {
-      const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(event),
@@ -71,7 +96,7 @@ Deno.serve(async (req) => {
     }
 
     if (operation === 'update') {
-      await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
+      await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${eventId}`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(event),
@@ -82,7 +107,7 @@ Deno.serve(async (req) => {
     }
 
     if (operation === 'delete') {
-      await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
+      await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${eventId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${accessToken}` },
       })
