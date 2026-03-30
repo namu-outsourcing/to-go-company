@@ -402,9 +402,8 @@ const app = {
             .upsert({ user_id: this.state.user.id, google_refresh_token: token }, { onConflict: 'user_id' });
     },
 
-    async getGoogleRefreshToken() {
-        const { data: { session } } = await supabase.auth.getSession();
-        return session?.provider_refresh_token ?? this.state.googleRefreshToken ?? null;
+    getGoogleRefreshToken() {
+        return this.state.session?.provider_refresh_token ?? this.state.googleRefreshToken ?? null;
     },
 
     async createCalendarEvent(job) {
