@@ -45,7 +45,7 @@ const app = {
             tutSkip:'건너뛰기', tutNext:'다음', tutDone:'완료',
             statusTodo:'상태: 지원 준비중', statusApplied:'상태: 지원 완료',
             statusInterview:'상태: 서류합격 / 면접', statusFail:'상태: 불합격 (보관함)', statusPass:'상태: 최종 합격 🎉',
-            btnWrite:'자소서 쓰기', btnViewDocs:'제출 서류 보기', btnAddDoc:'+ 서류 원본 제출', btnAddMore:'+ 서류 추가',
+            btnWrite:'자소서 쓰기', btnViewDocs:'제출 자소서 보기', btnAddDoc:'+ 서류 원본 제출', btnAddMore:'+ 서류 추가',
             alwaysTag:'🌟 상시모집', alwaysLabel:'🌟 상시모집 공고:',
             archiveNoData:'보관된 내역이 없습니다.', archiveReuse:'자소서 열람 (재활용하기)',
             archiveStatusChange:'상태 변경 (대시보드 복구)', archiveTodo:'지원 준비중으로 변경',
@@ -409,9 +409,9 @@ const app = {
     async createCalendarEvent(job) {
         if (!job.deadline || job.deadline === '상시모집') return null;
         const refreshToken = await this.getGoogleRefreshToken();
-        if (!refreshToken) { 
-            console.warn('Calendar: refresh_token 없음, 구글 캘린더 연동을 위해 재로그인이 필요할 수 있습니다.'); 
-            return null; 
+        if (!refreshToken) {
+            console.warn('Calendar: refresh_token 없음, 구글 캘린더 연동을 위해 재로그인이 필요할 수 있습니다.');
+            return null;
         }
         try {
             const data = await callEdgeFunction('calendar-event', { operation: 'create', job, refreshToken });
@@ -420,9 +420,9 @@ const app = {
                 return null;
             }
             return data.eventId ?? null;
-        } catch (e) { 
-            console.error('Calendar create exception:', e); 
-            return null; 
+        } catch (e) {
+            console.error('Calendar create exception:', e);
+            return null;
         }
     },
 
