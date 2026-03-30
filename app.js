@@ -761,11 +761,15 @@ const app = {
                 const newFileName = `[${job.company}] ${job.role}_${userName}_${docType}_${today}${count > 1 ? ('_' + count) : ''}.pdf`;
 
                 const storagePath = `${this.state.user.id}/${job.id}/${Date.now()}.pdf`;
-                const { error: uploadError } = await supabase.storage
+                console.log('[1] storage upload start:', storagePath, 'file size:', file.size);
+                const uploadResult = await supabase.storage
                     .from('pdfs')
                     .upload(storagePath, file, { contentType: 'application/pdf', upsert: true });
+                console.log('[2] upload result:', JSON.stringify(uploadResult));
+                const uploadError = uploadResult.error;
 
                 if (uploadError) { alert(`파일 업로드 실패: ${uploadError.message}`); return; }
+                console.log('[3] upload success');
 
                 if (!job.pdfs) job.pdfs = [];
                 job.pdfs.push({ name: newFileName, originalName: file.name, storagePath });
