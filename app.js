@@ -355,7 +355,8 @@ const app = {
             provider: 'google',
             options: {
                 redirectTo: window.location.origin,
-                scopes: 'https://www.googleapis.com/auth/calendar.events'
+                scopes: 'https://www.googleapis.com/auth/calendar.events',
+                queryParams: { access_type: 'offline', prompt: 'consent' }
             }
         });
         if (error) console.error('Login Error:', error.message);
