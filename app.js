@@ -757,14 +757,14 @@ const app = {
 
                 const today = new Date().toISOString().split('T')[0].replace(/-/g, '');
                 const count = (job.pdfs && job.pdfs.length) ? job.pdfs.length + 1 : 1;
-                const newFileName = `[${job.company}] ${job.role}_박채연_${docType}_${today}${count > 1 ? ('_' + count) : ''}.pdf`;
+                const userName = this.state.user?.user_metadata?.full_name || this.state.user?.email?.split('@')[0] || '제출자';
+                const newFileName = `[${job.company}] ${job.role}_${userName}_${docType}_${today}${count > 1 ? ('_' + count) : ''}.pdf`;
 
                 const safeFileName = newFileName.replace(/[\[\]\s\/]/g, '_');
                 const storagePath = `${this.state.user.id}/${job.id}/${safeFileName}`;
-                console.log('[PDF upload] storagePath:', storagePath);
                 const { error: uploadError } = await supabase.storage
                     .from('pdfs')
-                    .upload(storagePath, file, { contentType: 'application/pdf', upsert: false });
+                    .upload(storagePath, file, { contentType: 'application/pdf', upsert: true });
 
                 if (uploadError) { alert(`파일 업로드 실패: ${uploadError.message}`); return; }
 
