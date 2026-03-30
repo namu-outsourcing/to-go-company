@@ -368,7 +368,6 @@ const app = {
                         catch (e) { console.error('saveGoogleRefreshToken error:', e); }
                     }
                     await this.loadFromSupabase();
-                    await this.migrateBase64PdfsToStorage();
                     this._initUI();
                 }
             } else {
