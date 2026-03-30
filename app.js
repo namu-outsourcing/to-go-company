@@ -277,10 +277,7 @@ const app = {
         await this.checkUser();
         if (!this.state.user) {
             this.showLoginWall();
-            return;
         }
-        await this.loadFromSupabase();
-        this._initUI();
     },
 
     _initUI() {
