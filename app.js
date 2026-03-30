@@ -762,6 +762,7 @@ const app = {
 
                 const storagePath = `${this.state.user.id}/${job.id}/${Date.now()}.pdf`;
                 console.log('[1] storage upload start:', storagePath);
+                console.log('[1.5] token:', this.state.session?.access_token?.slice(0, 20), 'file type:', file?.type, 'file size:', file?.size);
                 const SUPABASE_URL = 'https://hixuqxymfkqwtpgpowcz.supabase.co';
                 const uploadResp = await fetch(`${SUPABASE_URL}/storage/v1/object/pdfs/${storagePath}`, {
                     method: 'POST',
