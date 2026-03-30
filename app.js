@@ -745,33 +745,39 @@ const app = {
 
         const reader = new FileReader();
         reader.onload = async (e) => {
-            const base64Full = e.target.result;
-            const base64Data = base64Full.split(',')[1];
-
-            let docType = "기타서류";
             try {
-                const result = await callEdgeFunction('gemini-classify-pdf', { pdfBase64: base64Data });
-                docType = result.type || "제출물";
-            } catch (error) { console.warn("PDF parsing failed -> fallback", error); docType = "제출물"; }
+                const base64Full = e.target.result;
+                const base64Data = base64Full.split(',')[1];
 
-            const today = new Date().toISOString().split('T')[0].replace(/-/g, '');
-            const count = (job.pdfs && job.pdfs.length) ? job.pdfs.length + 1 : 1;
-            const newFileName = `[${job.company}] ${job.role}_박채연_${docType}_${today}${count > 1 ? ('_' + count) : ''}.pdf`;
+                let docType = "기타서류";
+                try {
+                    const result = await callEdgeFunction('gemini-classify-pdf', { pdfBase64: base64Data });
+                    docType = result.type || "제출물";
+                } catch (error) { console.warn("PDF parsing failed -> fallback", error); docType = "제출물"; }
 
-            const safeFileName = newFileName.replace(/[\[\]\s]/g, '_');
-            const storagePath = `${this.state.user.id}/${job.id}/${safeFileName}`;
-            const { error: uploadError } = await supabase.storage
-                .from('pdfs')
-                .upload(storagePath, file, { contentType: 'application/pdf', upsert: false });
+                const today = new Date().toISOString().split('T')[0].replace(/-/g, '');
+                const count = (job.pdfs && job.pdfs.length) ? job.pdfs.length + 1 : 1;
+                const newFileName = `[${job.company}] ${job.role}_박채연_${docType}_${today}${count > 1 ? ('_' + count) : ''}.pdf`;
 
-            if (uploadError) { alert(`파일 업로드 실패: ${uploadError.message}`); return; }
+                const safeFileName = newFileName.replace(/[\[\]\s]/g, '_');
+                const storagePath = `${this.state.user.id}/${job.id}/${safeFileName}`;
+                console.log('[PDF upload] storagePath:', storagePath);
+                const { error: uploadError } = await supabase.storage
+                    .from('pdfs')
+                    .upload(storagePath, file, { contentType: 'application/pdf', upsert: false });
 
-            if (!job.pdfs) job.pdfs = [];
-            job.pdfs.push({ name: newFileName, originalName: file.name, storagePath });
-            if (job.status === 'todo') job.status = 'applied';
+                if (uploadError) { alert(`파일 업로드 실패: ${uploadError.message}`); return; }
 
-            this.saveStorage(); this.renderDashboard(); this.renderCalendar();
-            alert(`문서 자동 분류 완료: [${docType}]\n'${newFileName}' 이름으로 저장/제출되었습니다!`);
+                if (!job.pdfs) job.pdfs = [];
+                job.pdfs.push({ name: newFileName, originalName: file.name, storagePath });
+                if (job.status === 'todo') job.status = 'applied';
+
+                this.saveStorage(); this.renderDashboard(); this.renderCalendar();
+                alert(`문서 자동 분류 완료: [${docType}]\n'${newFileName}' 이름으로 저장/제출되었습니다!`);
+            } catch (err) {
+                console.error('[PDF upload error]', err);
+                alert(`PDF 처리 중 오류: ${err.message}`);
+            }
         };
         reader.readAsDataURL(file);
     },
