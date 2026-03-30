@@ -758,7 +758,8 @@ const app = {
             const count = (job.pdfs && job.pdfs.length) ? job.pdfs.length + 1 : 1;
             const newFileName = `[${job.company}] ${job.role}_박채연_${docType}_${today}${count > 1 ? ('_' + count) : ''}.pdf`;
 
-            const storagePath = `${this.state.user.id}/${job.id}/${newFileName}`;
+            const safeFileName = newFileName.replace(/[\[\]\s]/g, '_');
+            const storagePath = `${this.state.user.id}/${job.id}/${safeFileName}`;
             const { error: uploadError } = await supabase.storage
                 .from('pdfs')
                 .upload(storagePath, file, { contentType: 'application/pdf', upsert: false });
