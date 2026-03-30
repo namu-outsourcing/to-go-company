@@ -316,7 +316,10 @@ const app = {
             console.error('Load error:', error);
             return;
         }
-        this.state.jobs = data?.jobs || [];
+        const rawJobs = data?.jobs;
+        this.state.jobs = rawJobs
+            ? (typeof rawJobs === 'string' ? JSON.parse(rawJobs) : rawJobs)
+            : [];
         if (data?.google_refresh_token) {
             this.state.googleRefreshToken = data.google_refresh_token;
         }
