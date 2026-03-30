@@ -10,7 +10,11 @@ async function callEdgeFunction(path, body) {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(body)
     });
-    if (!resp.ok) throw new Error(`Edge Function error: ${resp.status}`);
+    if (!resp.ok) {
+        const errBody = await resp.text();
+        console.error(`Edge Function ${path} error ${resp.status}:`, errBody);
+        throw new Error(`Edge Function error: ${resp.status}`);
+    }
     return resp.json();
 }
 
@@ -41,7 +45,7 @@ const app = {
             tutSkip:'건너뛰기', tutNext:'다음', tutDone:'완료',
             statusTodo:'상태: 지원 준비중', statusApplied:'상태: 지원 완료',
             statusInterview:'상태: 서류합격 / 면접', statusFail:'상태: 불합격 (보관함)', statusPass:'상태: 최종 합격 🎉',
-            btnWrite:'자소서 쓰기', btnViewDocs:'제출 서류 보기', btnAddDoc:'+ 서류 원본 제출', btnAddMore:'+ 서류 추가',
+            btnWrite:'자소서 쓰기', btnViewDocs:'제출 자소서 보기', btnAddDoc:'+ 서류 원본 제출', btnAddMore:'+ 서류 추가',
             alwaysTag:'🌟 상시모집', alwaysLabel:'🌟 상시모집 공고:',
             archiveNoData:'보관된 내역이 없습니다.', archiveReuse:'자소서 열람 (재활용하기)',
             archiveStatusChange:'상태 변경 (대시보드 복구)', archiveTodo:'지원 준비중으로 변경',
@@ -277,10 +281,7 @@ const app = {
         await this.checkUser();
         if (!this.state.user) {
             this.showLoginWall();
-            return;
         }
-        await this.loadFromSupabase();
-        this._initUI();
     },
 
     _initUI() {
@@ -309,14 +310,48 @@ const app = {
     async loadFromSupabase() {
         const { data, error } = await supabase
             .from('user_data')
-            .select('jobs')
+            .select('jobs, google_refresh_token')
             .eq('user_id', this.state.user.id)
             .single();
         if (error && error.code !== 'PGRST116') {
             console.error('Load error:', error);
             return;
         }
-        this.state.jobs = data?.jobs || [];
+        const rawJobs = data?.jobs;
+        this.state.jobs = rawJobs
+            ? (typeof rawJobs === 'string' ? JSON.parse(rawJobs) : rawJobs)
+            : [];
+        if (data?.google_refresh_token) {
+            this.state.googleRefreshToken = data.google_refresh_token;
+        }
+    },
+
+    async migrateBase64PdfsToStorage() {
+        const userId = this.state.user.id;
+        let migrated = false;
+        for (const job of this.state.jobs) {
+            if (!job.pdfs) continue;
+            for (const pdf of job.pdfs) {
+                if (!pdf.dataUrl) continue;
+                const res = await fetch(pdf.dataUrl);
+                const blob = await res.blob();
+                const storagePath = `${userId}/${job.id}/${pdf.name}`;
+                const { error } = await supabase.storage.from('pdfs').upload(storagePath, blob, { contentType: 'application/pdf', upsert: true });
+                if (!error) {
+                    pdf.storagePath = storagePath;
+                    delete pdf.dataUrl;
+                    migrated = true;
+                } else {
+                    console.error(`Migration failed for ${pdf.name}:`, error);
+                }
+            }
+        }
+        if (migrated) {
+            await new Promise(resolve => {
+                supabase.from('user_data').upsert({ user_id: userId, jobs: this.state.jobs, updated_at: new Date().toISOString() }, { onConflict: 'user_id' }).then(resolve);
+            });
+            console.log('PDF migration to Storage complete');
+        }
     },
 
     async checkUser() {
@@ -332,11 +367,16 @@ const app = {
             if (this.state.user) {
                 this.hideLoginWall();
                 if (_event === 'SIGNED_IN' || _event === 'INITIAL_SESSION') {
+                    if (session?.provider_refresh_token) {
+                        try { await this.saveGoogleRefreshToken(session.provider_refresh_token); }
+                        catch (e) { console.error('saveGoogleRefreshToken error:', e); }
+                    }
                     await this.loadFromSupabase();
                     this._initUI();
                 }
             } else {
                 this.state.jobs = [];
+                this.state.googleRefreshToken = null;
                 this.showLoginWall();
             }
         });
@@ -347,62 +387,52 @@ const app = {
             provider: 'google',
             options: {
                 redirectTo: window.location.origin,
-                scopes: 'https://www.googleapis.com/auth/calendar.events'
+                scopes: 'https://www.googleapis.com/auth/calendar',
+                queryParams: { access_type: 'offline', prompt: 'consent' }
             }
         });
         if (error) console.error('Login Error:', error.message);
     },
 
-    async getGoogleAccessToken() {
-        const { data: { session } } = await supabase.auth.getSession();
-        return session?.provider_token ?? null;
+    async saveGoogleRefreshToken(token) {
+        if (!this.state.user || !token) return;
+        this.state.googleRefreshToken = token;
+        await supabase
+            .from('user_data')
+            .upsert({ user_id: this.state.user.id, google_refresh_token: token }, { onConflict: 'user_id' });
     },
 
-    _nextDay(dateStr) {
-        const d = new Date(dateStr);
-        d.setDate(d.getDate() + 1);
-        return d.toISOString().slice(0, 10);
+    getGoogleRefreshToken() {
+        return this.state.session?.provider_refresh_token ?? this.state.googleRefreshToken ?? null;
     },
 
     async createCalendarEvent(job) {
         if (!job.deadline || job.deadline === '상시모집') return null;
-        const token = await this.getGoogleAccessToken();
-        if (!token) return null;
-        const event = {
-            summary: `[취준] ${job.company} - ${job.role} 마감`,
-            description: job.sourceUrl ? `채용공고: ${job.sourceUrl}` : '',
-            start: { date: job.deadline },
-            end: { date: this._nextDay(job.deadline) }
-        };
+        const refreshToken = await this.getGoogleRefreshToken();
+        if (!refreshToken) {
+            console.warn('Calendar: refresh_token 없음, 구글 캘린더 연동을 위해 재로그인이 필요할 수 있습니다.');
+            return null;
+        }
         try {
-            const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify(event)
-            });
-            if (!res.ok) { console.error('Calendar create failed:', res.status, await res.text()); return null; }
-            const data = await res.json();
-            return data.id ?? null;
-        } catch (e) { console.error('Calendar create error:', e); return null; }
+            const data = await callEdgeFunction('calendar-event', { operation: 'create', job, refreshToken });
+            if (data.error) {
+                console.error('Calendar create error from function:', data.error);
+                return null;
+            }
+            return data.eventId ?? null;
+        } catch (e) {
+            console.error('Calendar create exception:', e);
+            return null;
+        }
     },
 
     async updateCalendarEvent(job) {
         if (!job.googleEventId) { job.googleEventId = await this.createCalendarEvent(job); return; }
         if (!job.deadline || job.deadline === '상시모집') return;
-        const token = await this.getGoogleAccessToken();
-        if (!token) return;
-        const event = {
-            summary: `[취준] ${job.company} - ${job.role} 마감`,
-            description: job.sourceUrl ? `채용공고: ${job.sourceUrl}` : '',
-            start: { date: job.deadline },
-            end: { date: this._nextDay(job.deadline) }
-        };
+        const refreshToken = await this.getGoogleRefreshToken();
+        if (!refreshToken) { console.warn('Calendar: refresh_token 없음, 재로그인 필요'); return; }
         try {
-            await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${job.googleEventId}`, {
-                method: 'PUT',
-                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify(event)
-            });
+            await callEdgeFunction('calendar-event', { operation: 'update', job, refreshToken, eventId: job.googleEventId });
         } catch (e) { console.error('Calendar update error:', e); }
     },
 
@@ -437,10 +467,15 @@ const app = {
 
     saveStorage() {
         if (!this.state.user) return;
-        supabase
-            .from('user_data')
-            .upsert({ user_id: this.state.user.id, jobs: this.state.jobs, updated_at: new Date().toISOString() })
-            .then(({ error }) => { if (error) console.error('Save error:', error); });
+        try {
+            supabase
+                .from('user_data')
+                .upsert({ user_id: this.state.user.id, jobs: this.state.jobs, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+                .then(({ error }) => { if (error) console.error('Save error:', error); })
+                .catch(e => console.error('Save catch:', e));
+        } catch(e) {
+            console.error('Save sync error:', e);
+        }
     },
 
     bindEvents() {
@@ -722,52 +757,89 @@ const app = {
 
         const reader = new FileReader();
         reader.onload = async (e) => {
-            const base64Full = e.target.result;
-            const base64Data = base64Full.split(',')[1];
-
-            let docType = "기타서류";
             try {
-                const result = await callEdgeFunction('gemini-classify-pdf', { pdfBase64: base64Data });
-                docType = result.type || "제출물";
-            } catch (error) { console.warn("PDF parsing failed -> fallback", error); docType = "제출물"; }
+                const base64Full = e.target.result;
+                const base64Data = base64Full.split(',')[1];
 
-            const today = new Date().toISOString().split('T')[0].replace(/-/g, '');
-            const count = (job.pdfs && job.pdfs.length) ? job.pdfs.length + 1 : 1;
-            const newFileName = `[${job.company}] ${job.role}_박채연_${docType}_${today}${count > 1 ? ('_' + count) : ''}.pdf`;
+                let docType = "기타서류";
+                try {
+                    const result = await callEdgeFunction('gemini-classify-pdf', { pdfBase64: base64Data });
+                    docType = result.type || "제출물";
+                } catch (error) { console.warn("PDF parsing failed -> fallback", error); docType = "제출물"; }
 
-            if (!job.pdfs) job.pdfs = [];
-            job.pdfs.push({ name: newFileName, originalName: file.name, dataUrl: base64Full });
-            if (job.status === 'todo') job.status = 'applied';
+                const today = new Date().toISOString().split('T')[0].replace(/-/g, '');
+                const count = (job.pdfs && job.pdfs.length) ? job.pdfs.length + 1 : 1;
+                const userName = this.state.user?.user_metadata?.full_name || this.state.user?.email?.split('@')[0] || '제출자';
+                const newFileName = `[${job.company}] ${job.role}_${userName}_${docType}_${today}${count > 1 ? ('_' + count) : ''}.pdf`;
 
-            try {
+                const storagePath = `${this.state.user.id}/${job.id}/${Date.now()}.pdf`;
+                const SUPABASE_URL = 'https://hixuqxymfkqwtpgpowcz.supabase.co';
+                const uploadResp = await fetch(`${SUPABASE_URL}/storage/v1/object/pdfs/${storagePath}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${this.state.session.access_token}`,
+                        'Content-Type': 'application/pdf',
+                        'x-upsert': 'true',
+                    },
+                    body: file,
+                });
+                if (!uploadResp.ok) {
+                    const errText = await uploadResp.text();
+                    alert(`파일 업로드 실패: ${errText}`);
+                    return;
+                }
+
+                if (!job.pdfs) job.pdfs = [];
+                job.pdfs.push({ name: newFileName, originalName: file.name, storagePath });
+                if (job.status === 'todo') job.status = 'applied';
+
                 this.saveStorage(); this.renderDashboard(); this.renderCalendar();
                 alert(`문서 자동 분류 완료: [${docType}]\n'${newFileName}' 이름으로 저장/제출되었습니다!`);
-            } catch (err) { job.pdfs.pop(); alert("파일 제한 초과."); }
+            } catch (err) {
+                console.error('[PDF upload error]', err);
+                alert(`PDF 처리 중 오류: ${err.message}`);
+            }
         };
         reader.readAsDataURL(file);
     },
 
-    downloadPdf(jobId, name, e) {
+    async downloadPdf(jobId, name, e) {
         if (e) e.stopPropagation();
         const job = this.state.jobs.find(j => j.id === jobId);
-        if (job && job.pdfs) {
-            const pdf = job.pdfs.find(p => p.name === name);
-            if (pdf && pdf.dataUrl) {
-                const link = document.createElement('a'); link.href = pdf.dataUrl; link.download = pdf.name; link.click();
-            }
+        if (!job || !job.pdfs) return;
+        const pdf = job.pdfs.find(p => p.name === name);
+        if (!pdf) return;
+        if (pdf.dataUrl) {
+            const link = document.createElement('a'); link.href = pdf.dataUrl; link.download = pdf.name; link.click();
+            return;
+        }
+        if (pdf.storagePath) {
+            const SUPABASE_URL = 'https://hixuqxymfkqwtpgpowcz.supabase.co';
+            const resp = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/pdfs/${pdf.storagePath}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${this.state.session.access_token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ expiresIn: 60 }),
+            });
+            if (!resp.ok) { alert('파일을 불러오는 데 실패했습니다.'); return; }
+            const { signedURL } = await resp.json();
+            const link = document.createElement('a'); link.href = `${SUPABASE_URL}/storage/v1${signedURL}`; link.download = pdf.name; link.click();
         }
     },
 
-    deletePdf(jobId, name, event) {
+    async deletePdf(jobId, name, event) {
         event.stopPropagation();
         if (!confirm(`'${name}' ${this.t('deleteConfirm')}`)) return;
         const job = this.state.jobs.find(j => j.id === jobId);
-        if (job && job.pdfs) {
-            job.pdfs = job.pdfs.filter(p => p.name !== name);
-            this.saveStorage();
-            this.renderDashboard();
-            this.renderArchive();
+        if (!job || !job.pdfs) return;
+        const pdf = job.pdfs.find(p => p.name === name);
+        if (pdf?.storagePath) {
+            const { error } = await supabase.storage.from('pdfs').remove([pdf.storagePath]);
+            if (error) console.error('Storage delete error:', error);
         }
+        job.pdfs = job.pdfs.filter(p => p.name !== name);
+        this.saveStorage();
+        this.renderDashboard();
+        this.renderArchive();
     },
 
     changeCalendarMonth(offset) {
@@ -896,13 +968,10 @@ const app = {
         if (!job) return;
         if (!confirm(`'${job.company}' ${this.t('jobDeleteConfirm')}`)) return;
         if (job.googleEventId) {
-            const token = await this.getGoogleAccessToken();
-            if (token) {
+            const refreshToken = await this.getGoogleRefreshToken();
+            if (refreshToken) {
                 try {
-                    await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${job.googleEventId}`, {
-                        method: 'DELETE',
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
+                    await callEdgeFunction('calendar-event', { operation: 'delete', job, refreshToken, eventId: job.googleEventId });
                 } catch (e) { console.error('Calendar delete error:', e); }
             }
         }
