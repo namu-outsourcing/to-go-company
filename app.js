@@ -761,14 +761,23 @@ const app = {
                 const newFileName = `[${job.company}] ${job.role}_${userName}_${docType}_${today}${count > 1 ? ('_' + count) : ''}.pdf`;
 
                 const storagePath = `${this.state.user.id}/${job.id}/${Date.now()}.pdf`;
-                console.log('[1] storage upload start:', storagePath, 'file size:', file.size);
-                const uploadResult = await supabase.storage
-                    .from('pdfs')
-                    .upload(storagePath, file, { contentType: 'application/pdf', upsert: true });
-                console.log('[2] upload result:', JSON.stringify(uploadResult));
-                const uploadError = uploadResult.error;
-
-                if (uploadError) { alert(`파일 업로드 실패: ${uploadError.message}`); return; }
+                console.log('[1] storage upload start:', storagePath);
+                const SUPABASE_URL = 'https://hixuqxymfkqwtpgpowcz.supabase.co';
+                const uploadResp = await fetch(`${SUPABASE_URL}/storage/v1/object/pdfs/${storagePath}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${this.state.session.access_token}`,
+                        'Content-Type': 'application/pdf',
+                        'x-upsert': 'true',
+                    },
+                    body: file,
+                });
+                console.log('[2] upload status:', uploadResp.status);
+                if (!uploadResp.ok) {
+                    const errText = await uploadResp.text();
+                    alert(`파일 업로드 실패: ${errText}`);
+                    return;
+                }
                 console.log('[3] upload success');
 
                 if (!job.pdfs) job.pdfs = [];
