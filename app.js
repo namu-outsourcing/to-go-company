@@ -322,6 +322,34 @@ const app = {
         }
     },
 
+    async migrateBase64PdfsToStorage() {
+        const userId = this.state.user.id;
+        let migrated = false;
+        for (const job of this.state.jobs) {
+            if (!job.pdfs) continue;
+            for (const pdf of job.pdfs) {
+                if (!pdf.dataUrl) continue;
+                const res = await fetch(pdf.dataUrl);
+                const blob = await res.blob();
+                const storagePath = `${userId}/${job.id}/${pdf.name}`;
+                const { error } = await supabase.storage.from('pdfs').upload(storagePath, blob, { contentType: 'application/pdf', upsert: true });
+                if (!error) {
+                    pdf.storagePath = storagePath;
+                    delete pdf.dataUrl;
+                    migrated = true;
+                } else {
+                    console.error(`Migration failed for ${pdf.name}:`, error);
+                }
+            }
+        }
+        if (migrated) {
+            await new Promise(resolve => {
+                supabase.from('user_data').upsert({ user_id: userId, jobs: this.state.jobs, updated_at: new Date().toISOString() }, { onConflict: 'user_id' }).then(resolve);
+            });
+            console.log('PDF migration to Storage complete');
+        }
+    },
+
     async checkUser() {
         const { data: { session } } = await supabase.auth.getSession();
         this.state.user = session?.user ?? null;
@@ -340,6 +368,7 @@ const app = {
                         catch (e) { console.error('saveGoogleRefreshToken error:', e); }
                     }
                     await this.loadFromSupabase();
+                    await this.migrateBase64PdfsToStorage();
                     this._initUI();
                 }
             } else {
@@ -729,39 +758,54 @@ const app = {
             const count = (job.pdfs && job.pdfs.length) ? job.pdfs.length + 1 : 1;
             const newFileName = `[${job.company}] ${job.role}_박채연_${docType}_${today}${count > 1 ? ('_' + count) : ''}.pdf`;
 
+            const storagePath = `${this.state.user.id}/${job.id}/${newFileName}`;
+            const { error: uploadError } = await supabase.storage
+                .from('pdfs')
+                .upload(storagePath, file, { contentType: 'application/pdf', upsert: false });
+
+            if (uploadError) { alert(`파일 업로드 실패: ${uploadError.message}`); return; }
+
             if (!job.pdfs) job.pdfs = [];
-            job.pdfs.push({ name: newFileName, originalName: file.name, dataUrl: base64Full });
+            job.pdfs.push({ name: newFileName, originalName: file.name, storagePath });
             if (job.status === 'todo') job.status = 'applied';
 
-            try {
-                this.saveStorage(); this.renderDashboard(); this.renderCalendar();
-                alert(`문서 자동 분류 완료: [${docType}]\n'${newFileName}' 이름으로 저장/제출되었습니다!`);
-            } catch (err) { job.pdfs.pop(); alert("파일 제한 초과."); }
+            this.saveStorage(); this.renderDashboard(); this.renderCalendar();
+            alert(`문서 자동 분류 완료: [${docType}]\n'${newFileName}' 이름으로 저장/제출되었습니다!`);
         };
         reader.readAsDataURL(file);
     },
 
-    downloadPdf(jobId, name, e) {
+    async downloadPdf(jobId, name, e) {
         if (e) e.stopPropagation();
         const job = this.state.jobs.find(j => j.id === jobId);
-        if (job && job.pdfs) {
-            const pdf = job.pdfs.find(p => p.name === name);
-            if (pdf && pdf.dataUrl) {
-                const link = document.createElement('a'); link.href = pdf.dataUrl; link.download = pdf.name; link.click();
-            }
+        if (!job || !job.pdfs) return;
+        const pdf = job.pdfs.find(p => p.name === name);
+        if (!pdf) return;
+        if (pdf.dataUrl) {
+            const link = document.createElement('a'); link.href = pdf.dataUrl; link.download = pdf.name; link.click();
+            return;
+        }
+        if (pdf.storagePath) {
+            const { data, error } = await supabase.storage.from('pdfs').createSignedUrl(pdf.storagePath, 60);
+            if (error || !data?.signedUrl) { alert('파일을 불러오는 데 실패했습니다.'); return; }
+            const link = document.createElement('a'); link.href = data.signedUrl; link.download = pdf.name; link.click();
         }
     },
 
-    deletePdf(jobId, name, event) {
+    async deletePdf(jobId, name, event) {
         event.stopPropagation();
         if (!confirm(`'${name}' ${this.t('deleteConfirm')}`)) return;
         const job = this.state.jobs.find(j => j.id === jobId);
-        if (job && job.pdfs) {
-            job.pdfs = job.pdfs.filter(p => p.name !== name);
-            this.saveStorage();
-            this.renderDashboard();
-            this.renderArchive();
+        if (!job || !job.pdfs) return;
+        const pdf = job.pdfs.find(p => p.name === name);
+        if (pdf?.storagePath) {
+            const { error } = await supabase.storage.from('pdfs').remove([pdf.storagePath]);
+            if (error) console.error('Storage delete error:', error);
         }
+        job.pdfs = job.pdfs.filter(p => p.name !== name);
+        this.saveStorage();
+        this.renderDashboard();
+        this.renderArchive();
     },
 
     changeCalendarMonth(offset) {
