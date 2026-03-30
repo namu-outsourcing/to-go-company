@@ -358,6 +358,12 @@ const app = {
         return session?.provider_token ?? null;
     },
 
+    _nextDay(dateStr) {
+        const d = new Date(dateStr);
+        d.setDate(d.getDate() + 1);
+        return d.toISOString().slice(0, 10);
+    },
+
     async createCalendarEvent(job) {
         if (!job.deadline || job.deadline === '상시모집') return null;
         const token = await this.getGoogleAccessToken();
@@ -366,7 +372,7 @@ const app = {
             summary: `[취준] ${job.company} - ${job.role} 마감`,
             description: job.sourceUrl ? `채용공고: ${job.sourceUrl}` : '',
             start: { date: job.deadline },
-            end: { date: job.deadline }
+            end: { date: this._nextDay(job.deadline) }
         };
         try {
             const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
@@ -374,6 +380,7 @@ const app = {
                 headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify(event)
             });
+            if (!res.ok) { console.error('Calendar create failed:', res.status, await res.text()); return null; }
             const data = await res.json();
             return data.id ?? null;
         } catch (e) { console.error('Calendar create error:', e); return null; }
@@ -388,7 +395,7 @@ const app = {
             summary: `[취준] ${job.company} - ${job.role} 마감`,
             description: job.sourceUrl ? `채용공고: ${job.sourceUrl}` : '',
             start: { date: job.deadline },
-            end: { date: job.deadline }
+            end: { date: this._nextDay(job.deadline) }
         };
         try {
             await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${job.googleEventId}`, {
