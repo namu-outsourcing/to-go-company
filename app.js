@@ -761,8 +761,6 @@ const app = {
                 const newFileName = `[${job.company}] ${job.role}_${userName}_${docType}_${today}${count > 1 ? ('_' + count) : ''}.pdf`;
 
                 const storagePath = `${this.state.user.id}/${job.id}/${Date.now()}.pdf`;
-                console.log('[1] storage upload start:', storagePath);
-                console.log('[1.5] token:', this.state.session?.access_token?.slice(0, 20), 'file type:', file?.type, 'file size:', file?.size);
                 const SUPABASE_URL = 'https://hixuqxymfkqwtpgpowcz.supabase.co';
                 const uploadResp = await fetch(`${SUPABASE_URL}/storage/v1/object/pdfs/${storagePath}`, {
                     method: 'POST',
@@ -773,13 +771,11 @@ const app = {
                     },
                     body: file,
                 });
-                console.log('[2] upload status:', uploadResp.status);
                 if (!uploadResp.ok) {
                     const errText = await uploadResp.text();
                     alert(`파일 업로드 실패: ${errText}`);
                     return;
                 }
-                console.log('[3] upload success');
 
                 if (!job.pdfs) job.pdfs = [];
                 job.pdfs.push({ name: newFileName, originalName: file.name, storagePath });
@@ -806,9 +802,15 @@ const app = {
             return;
         }
         if (pdf.storagePath) {
-            const { data, error } = await supabase.storage.from('pdfs').createSignedUrl(pdf.storagePath, 60);
-            if (error || !data?.signedUrl) { alert('파일을 불러오는 데 실패했습니다.'); return; }
-            const link = document.createElement('a'); link.href = data.signedUrl; link.download = pdf.name; link.click();
+            const SUPABASE_URL = 'https://hixuqxymfkqwtpgpowcz.supabase.co';
+            const resp = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/pdfs/${pdf.storagePath}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${this.state.session.access_token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ expiresIn: 60 }),
+            });
+            if (!resp.ok) { alert('파일을 불러오는 데 실패했습니다.'); return; }
+            const { signedURL } = await resp.json();
+            const link = document.createElement('a'); link.href = `${SUPABASE_URL}/storage/v1${signedURL}`; link.download = pdf.name; link.click();
         }
     },
 
