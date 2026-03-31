@@ -437,7 +437,7 @@ const app = {
             options: {
                 redirectTo: window.location.origin,
                 scopes: 'https://www.googleapis.com/auth/calendar',
-                queryParams: { access_type: 'offline', prompt: 'consent' }
+                queryParams: { access_type: 'offline' }
             }
         });
         if (error) console.error('Login Error:', error.message);
