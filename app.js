@@ -18,6 +18,37 @@ async function callEdgeFunction(path, body) {
     return resp.json();
 }
 
+function mapDbToJob(row) {
+    return {
+        id: row.id,
+        company: row.company,
+        role: row.role,
+        deadline: row.deadline,
+        sourceUrl: row.source_url,
+        status: row.status,
+        googleEventId: row.google_event_id,
+        questions: row.questions || [],
+        answers: row.answers || [],
+        pdfs: row.pdfs || [],
+    };
+}
+
+function mapJobToDb(job, userId) {
+    return {
+        id: job.id,
+        user_id: userId,
+        company: job.company || '',
+        role: job.role || '',
+        deadline: job.deadline || null,
+        source_url: job.sourceUrl || null,
+        status: job.status || 'todo',
+        google_event_id: job.googleEventId || null,
+        questions: job.questions || [],
+        answers: job.answers || [],
+        pdfs: job.pdfs || [],
+    };
+}
+
 const app = {
     // ── Language / i18n ──────────────────────────────────────────────────
     lang: localStorage.getItem('appLang') || 'ko',
@@ -308,21 +339,14 @@ const app = {
     },
 
     async loadFromSupabase() {
-        const { data, error } = await supabase
-            .from('user_data')
-            .select('jobs, google_refresh_token')
-            .eq('user_id', this.state.user.id)
-            .single();
-        if (error && error.code !== 'PGRST116') {
-            console.error('Load error:', error);
-            return;
-        }
-        const rawJobs = data?.jobs;
-        this.state.jobs = rawJobs
-            ? (typeof rawJobs === 'string' ? JSON.parse(rawJobs) : rawJobs)
-            : [];
-        if (data?.google_refresh_token) {
-            this.state.googleRefreshToken = data.google_refresh_token;
+        const [jobsResult, tokenResult] = await Promise.all([
+            supabase.from('jobs').select('*').eq('user_id', this.state.user.id).order('created_at', { ascending: false }),
+            supabase.from('user_data').select('google_refresh_token').eq('user_id', this.state.user.id).single()
+        ]);
+        if (jobsResult.error) console.error('Load jobs error:', jobsResult.error);
+        this.state.jobs = (jobsResult.data || []).map(mapDbToJob);
+        if (tokenResult.data?.google_refresh_token) {
+            this.state.googleRefreshToken = tokenResult.data.google_refresh_token;
         }
     },
 
@@ -348,7 +372,9 @@ const app = {
         }
         if (migrated) {
             await new Promise(resolve => {
-                supabase.from('user_data').upsert({ user_id: userId, jobs: this.state.jobs, updated_at: new Date().toISOString() }, { onConflict: 'user_id' }).then(resolve);
+                supabase.from('jobs').upsert(
+                    this.state.jobs.map(job => mapJobToDb(job, userId)), { onConflict: 'id' }
+                ).then(resolve);
             });
             console.log('PDF migration to Storage complete');
         }
@@ -477,9 +503,11 @@ const app = {
     saveStorage() {
         if (!this.state.user) return;
         try {
+            const dbJobs = this.state.jobs.map(job => mapJobToDb(job, this.state.user.id));
+            if (dbJobs.length === 0) return;
             supabase
-                .from('user_data')
-                .upsert({ user_id: this.state.user.id, jobs: this.state.jobs, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+                .from('jobs')
+                .upsert(dbJobs, { onConflict: 'id' })
                 .then(({ error }) => { if (error) console.error('Save error:', error); })
                 .catch(e => console.error('Save catch:', e));
         } catch(e) {
@@ -673,13 +701,18 @@ const app = {
 
         const newJob = {
             id: Date.now().toString(), company, role, deadline, questions, sourceUrl: this.tempParsedSourceUrl,
-            answers: new Array(questions.length).fill(''), status: 'todo', pdfName: null, googleEventId: null
+            answers: new Array(questions.length).fill(''), status: 'todo', pdfName: null, googleEventId: null, pdfs: []
         };
         this.state.jobs.push(newJob);
+        supabase.from('jobs').insert(mapJobToDb(newJob, this.state.user.id))
+            .then(({ error }) => { if (error) console.error('Insert job error:', error); });
         this.createCalendarEvent(newJob).then(eventId => {
-            if (eventId) { newJob.googleEventId = eventId; this.saveStorage(); }
+            if (eventId) {
+                newJob.googleEventId = eventId;
+                supabase.from('jobs').update({ google_event_id: eventId }).eq('id', newJob.id)
+                    .then(({ error }) => { if (error) console.error('Update googleEventId error:', error); });
+            }
         });
-        this.saveStorage();
         alert(this.t('saveSuccess'));
         document.querySelector('.nav-item[data-view="dashboard"]').click();
         document.getElementById('job-url').value = ''; 
@@ -984,8 +1017,10 @@ const app = {
                 } catch (e) { console.error('Calendar delete error:', e); }
             }
         }
-        this.state.jobs = this.state.jobs.filter(j => j.id !== this.currentModalJobId);
-        this.saveStorage();
+        const deletedId = this.currentModalJobId;
+        this.state.jobs = this.state.jobs.filter(j => j.id !== deletedId);
+        supabase.from('jobs').delete().eq('id', deletedId).eq('user_id', this.state.user.id)
+            .then(({ error }) => { if (error) console.error('Delete job error:', error); });
         this.renderDashboard();
         this.renderCalendar();
         this.closeModal();
