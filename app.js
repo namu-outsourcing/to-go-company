@@ -393,6 +393,7 @@ const app = {
             this.state.session = session ?? null;
             this.updateAuthUI();
             if (this.state.user) {
+                localStorage.setItem('termsAgreed', 'true');
                 this.hideLoginWall();
                 if (_event === 'SIGNED_IN' || _event === 'INITIAL_SESSION') {
                     if (!isInitialized) {
@@ -413,6 +414,13 @@ const app = {
                 this.state.jobs = [];
                 this.state.googleRefreshToken = null;
                 this.showLoginWall();
+                if (localStorage.getItem('termsAgreed')) {
+                    const termsCheck = document.getElementById('check-terms');
+                    const privacyCheck = document.getElementById('check-privacy');
+                    if (termsCheck) termsCheck.checked = true;
+                    if (privacyCheck) privacyCheck.checked = true;
+                    this.updateLoginBtn();
+                }
             }
         });
     },
@@ -423,10 +431,22 @@ const app = {
             options: {
                 redirectTo: window.location.origin,
                 scopes: 'https://www.googleapis.com/auth/calendar',
-                queryParams: { access_type: 'offline', prompt: 'consent' }
+                queryParams: { access_type: 'offline' }
             }
         });
         if (error) console.error('Login Error:', error.message);
+    },
+
+    async reloginForCalendar() {
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin,
+                scopes: 'https://www.googleapis.com/auth/calendar',
+                queryParams: { access_type: 'offline', prompt: 'consent' }
+            }
+        });
+        if (error) console.error('Relogin Error:', error.message);
     },
 
     async saveGoogleRefreshToken(token) {
@@ -451,6 +471,7 @@ const app = {
         try {
             const data = await callEdgeFunction('calendar-event', { operation: 'create', job, refreshToken });
             if (data.error) {
+                if (data.error.includes('invalid_grant')) { this.notifyCalendarReloginNeeded(); return null; }
                 console.error('Calendar create error from function:', data.error);
                 return null;
             }
@@ -467,8 +488,15 @@ const app = {
         const refreshToken = await this.getGoogleRefreshToken();
         if (!refreshToken) { console.warn('Calendar: refresh_token 없음, 재로그인 필요'); return; }
         try {
-            await callEdgeFunction('calendar-event', { operation: 'update', job, refreshToken, eventId: job.googleEventId });
+            const data = await callEdgeFunction('calendar-event', { operation: 'update', job, refreshToken, eventId: job.googleEventId });
+            if (data?.error?.includes('invalid_grant')) { this.notifyCalendarReloginNeeded(); }
         } catch (e) { console.error('Calendar update error:', e); }
+    },
+
+    notifyCalendarReloginNeeded() {
+        if (confirm('구글 캘린더 연동이 만료되었습니다.\n재연동하시겠습니까? (재로그인이 필요합니다)')) {
+            this.reloginForCalendar();
+        }
     },
 
     async logout() {
