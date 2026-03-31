@@ -1123,36 +1123,74 @@ const app = {
         this.state.editorJobId = jobId; this.state.editorActiveQIndex = 0;
         const editorCompany = document.getElementById('editor-company');
         editorCompany.textContent = job.company;
-        const roleSpan = document.createElement('span');
-        roleSpan.style.cssText = 'font-weight:500; font-size:1.1rem; color:var(--text-muted)';
-        roleSpan.textContent = ` | ${job.role}`;
-        editorCompany.appendChild(roleSpan);
         this.renderEditorQuestions(job); this.loadEditorQuestion(0);
+        this.renderCompanySelector();
+    },
+
+    renderCompanySelector() {
+        const dropdown = document.getElementById('company-selector-dropdown');
+        if (!dropdown) return;
+        dropdown.innerHTML = '';
+        const activeJobs = this.state.jobs.filter(j => j.status !== 'pass' && j.status !== 'fail');
+        activeJobs.forEach(job => {
+            const item = document.createElement('div');
+            item.className = 'dropdown-item';
+            item.innerHTML = `
+                <span class="comp">${job.company}</span>
+                <span class="role">${job.role}</span>
+            `;
+            item.onclick = (e) => { e.stopPropagation(); this.openEditor(job.id); dropdown.classList.add('hidden'); };
+            dropdown.appendChild(item);
+        });
+    },
+
+    toggleCompanySelector(event) {
+        event.stopPropagation();
+        const dropdown = document.getElementById('company-selector-dropdown');
+        dropdown.classList.toggle('hidden');
+        if (!dropdown.classList.contains('hidden')) {
+            const close = () => { dropdown.classList.add('hidden'); document.removeEventListener('click', close); };
+            document.addEventListener('click', close);
+        }
     },
 
     renderEditorQuestions(job) {
         const qList = document.querySelector('.q-list'); qList.innerHTML = '';
         
-        // Render existing questions
-        if (job.questions && job.questions.length > 0) {
-            job.questions.forEach((q, idx) => {
-                const div = document.createElement('div');
-                div.className = `q-item ${idx === this.state.editorActiveQIndex ? 'active' : ''}`;
-                div.dataset.idx = idx;
-                div.style.cssText = 'white-space:normal; word-break:keep-all;';
-                div.textContent = `${idx + 1}. ${q || (this.lang === 'ko' ? '새 문항' : 'New Question')}`;
-                div.onclick = () => app.loadEditorQuestion(idx);
-                qList.appendChild(div);
-            });
+        if (!job.questions || job.questions.length === 0) {
+            qList.innerHTML = `<div style="text-align:center; padding:2rem; color:var(--text-muted); font-size:0.85rem;">등록된 문항이 없습니다.<br>우측 상단 + 버튼으로 추가하세요.</div>`;
+            return;
         }
 
-        // Add "Add New Question" button at the bottom
-        const addBtn = document.createElement('button');
-        addBtn.className = 'btn-sm';
-        addBtn.style.cssText = 'width:100%; margin-top:0.8rem; background:#eff6ff; color:var(--primary); font-weight:700; border:1px dashed var(--primary); padding:0.8rem; border-radius:8px;';
-        addBtn.innerHTML = `<span class="material-symbols-rounded" style="font-size:1.1rem; vertical-align:middle; margin-right:4px;">add_circle</span> ${this.t('editAddQ')}`;
-        addBtn.onclick = () => app.addEditorQuestion();
-        qList.appendChild(addBtn);
+        job.questions.forEach((q, idx) => {
+            const div = document.createElement('div');
+            div.className = `q-item ${idx === this.state.editorActiveQIndex ? 'active' : ''}`;
+            div.dataset.idx = idx;
+            div.innerHTML = `
+                <div style="padding-right:1.5rem;">${idx + 1}. ${q || (this.lang === 'ko' ? '새 문항' : 'New Question')}</div>
+                <button class="q-delete-btn material-symbols-rounded" style="font-size:1.1rem;" onclick="app.deleteEditorQuestion(event, ${idx})">delete</button>
+            `;
+            div.onclick = () => app.loadEditorQuestion(idx);
+            qList.appendChild(div);
+        });
+    },
+
+    deleteEditorQuestion(event, idx) {
+        event.stopPropagation();
+        if (!confirm(this.lang === 'ko' ? '이 문항을 삭제하시겠습니까?' : 'Delete this question?')) return;
+        const job = this.state.jobs.find(j => j.id === this.state.editorJobId);
+        if (!job) return;
+
+        job.questions.splice(idx, 1);
+        if (job.answers) job.answers.splice(idx, 1);
+
+        if (this.state.editorActiveQIndex >= job.questions.length) {
+            this.state.editorActiveQIndex = Math.max(0, job.questions.length - 1);
+        }
+
+        this.saveStorage();
+        this.renderEditorQuestions(job);
+        this.loadEditorQuestion(this.state.editorActiveQIndex);
     },
 
     addEditorQuestion() {
@@ -1171,7 +1209,6 @@ const app = {
         this.renderEditorQuestions(job);
         this.loadEditorQuestion(newIdx);
         
-        // Focus on the title field for the new question
         const titleInput = document.getElementById('current-q-title');
         if (titleInput) {
             titleInput.focus();
@@ -1182,29 +1219,32 @@ const app = {
     loadEditorQuestion(idx) {
         this.state.editorActiveQIndex = idx;
         const job = this.state.jobs.find(j => j.id === this.state.editorJobId);
-        if (!job) return;
+        if (!job) {
+            document.getElementById('current-q-title').value = '';
+            document.getElementById('essay-input').value = '';
+            return;
+        }
 
         document.querySelectorAll('.q-item').forEach(item => item.classList.remove('active'));
         const activeItem = document.querySelector(`.q-item[data-idx="${idx}"]`);
         if (activeItem) activeItem.classList.add('active');
 
+        const qNumBadge = document.getElementById('current-q-num');
+        if (qNumBadge) qNumBadge.textContent = job.questions.length > 0 ? idx + 1 : '0';
+
         const titleInput = document.getElementById('current-q-title');
         titleInput.value = job.questions[idx] || '';
         
-        // Auto-resize title textarea
         titleInput.style.height = 'auto';
         titleInput.style.height = (titleInput.scrollHeight) + 'px';
         
-        // Single listener for title updates
         titleInput.oninput = (e) => {
             job.questions[idx] = e.target.value;
             titleInput.style.height = 'auto';
             titleInput.style.height = (titleInput.scrollHeight) + 'px';
-            
-            // Update the sidebar text live
-            const qItem = document.querySelector(`.q-item[data-idx="${idx}"]`);
+            const qItem = document.querySelector(`.q-item[data-idx="${idx}"] div`);
             if (qItem) qItem.textContent = `${idx + 1}. ${e.target.value || (this.lang === 'ko' ? '새 문항' : 'New Question')}`;
-            
+            this.triggerAutoSaveFeedback();
             this.saveStorage();
         };
 
@@ -1217,6 +1257,17 @@ const app = {
 
         const st = document.getElementById('spell-check-status');
         if (st) { st.innerHTML = `<span class="material-symbols-rounded">check_circle</span> ${this.t('editorReady')}`; st.className = 'spell-check-status ideal'; }
+    },
+
+    triggerAutoSaveFeedback() {
+        const indicator = document.getElementById('auto-save-indicator');
+        if (!indicator) return;
+        indicator.style.color = 'var(--primary)';
+        indicator.style.transform = 'scale(1.2)';
+        setTimeout(() => {
+            indicator.style.color = '';
+            indicator.style.transform = '';
+        }, 300);
     },
 
     async runSpellCheck() {

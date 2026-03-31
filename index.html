@@ -231,23 +231,43 @@
             <!-- Editor View -->
             <section id="view-editor" class="view">
                 <header>
-                    <h1><span class="i18n-nav-editor">자소서 에디터</span><span class="company-badge" id="editor-company" style="font-size: 1.2rem; margin-left:1rem; color:var(--primary);"></span></h1>
+                    <div style="display:flex; align-items:center; gap:0.8rem;">
+                        <h1 style="margin:0;"><span class="i18n-nav-editor">자소서 에디터</span></h1>
+                        <div class="company-selector-wrapper" id="company-selector-trigger" onclick="app.toggleCompanySelector(event)">
+                            <span class="company-badge" id="editor-company">기업을 선택하세요</span>
+                            <span class="material-symbols-rounded" style="font-size:1.2rem; color:var(--primary);">expand_more</span>
+                            <div id="company-selector-dropdown" class="dropdown-menu hidden"></div>
+                        </div>
+                    </div>
                     <div style="display:flex; gap:0.5rem;">
                         <button class="btn-secondary" onclick="app.openImportModal()">
                             <span class="material-symbols-rounded">history</span>
                             <span class="i18n-editor-import">불러오기</span>
                         </button>
-                        <button class="btn-secondary" onclick="app.showAutoSaveAlert()" title="실시간 자동저장 중">
+                        <button class="btn-secondary" id="auto-save-indicator" title="실시간 자동저장 중">
                             <span class="material-symbols-rounded">cloud_done</span>
                         </button>
                     </div>
                 </header>
                 <div class="editor-layout">
-                    <div class="q-list"></div>
+                    <div class="q-sidebar">
+                        <div class="q-sidebar-header">
+                            <span style="font-weight:700; color:var(--text-main); font-size:0.9rem;">문항 리스트</span>
+                            <button class="icon-btn-sm" onclick="app.addEditorQuestion()" title="문항 추가">
+                                <span class="material-symbols-rounded">add_circle</span>
+                            </button>
+                        </div>
+                        <div class="q-list"></div>
+                    </div>
                     <div class="editor-area glass-panel">
-                        <textarea id="current-q-title" class="i18n-editor-selectq" placeholder="작성할 문항을 왼쪽에서 선택하거나 새 문항을 추가해주세요." rows="1" style="width:100%; font-size:1.25rem; font-weight:700; border:none; background:transparent; resize:none; padding:0; margin-bottom:1rem; color:var(--text-main); font-family:inherit; outline:none;" spellcheck="false"></textarea>
+                        <div class="q-title-section">
+                            <span class="q-num-badge" id="current-q-num">1</span>
+                            <textarea id="current-q-title" class="i18n-editor-selectq" placeholder="작성할 문항을 왼쪽에서 선택하거나 새 문항을 추가해주세요." rows="1" spellcheck="false"></textarea>
+                        </div>
                         <div class="ai-suggestion" id="ai-suggestion-box" style="display:none;"></div>
-                        <textarea id="essay-input" placeholder="여기에 자기소개서를 작성하세요..."></textarea>
+                        <div class="essay-wrapper">
+                            <textarea id="essay-input" placeholder="여기에 자기소개서를 작성하세요..."></textarea>
+                        </div>
                         <div class="editor-footer">
                             <div class="spell-check-status ideal" id="spell-check-status">
                                 <span class="material-symbols-rounded">check_circle</span>
