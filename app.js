@@ -100,6 +100,9 @@ const app = {
             spellCancel:'취소하고 닫기', spellApply:'이 내용으로 덮어씌울게요!',
             spellDone:'교정 제안 생성 완료 (내용을 확인해주세요)', spellCancelled:'교정이 취소되었습니다.',
             spellApplied:'에디터에 성공적으로 반영/저장됨', spellError:'검수 에러 발생 (재시도 요망)',
+            calAuthError: '구글 캘린더 연동 권한이 부족합니다. 다시 로그인하여 [캘린더 관리] 권한을 승인하시겠습니까?',
+            calAuthSuccess: '구글 캘린더 권한이 성공적으로 획득되었습니다!',
+            calAuthDenied: '권한 승인이 거부되었습니다. 캘린더 기능을 사용하시려면 승인이 필요합니다.',
             calDays:['일','월','화','수','목','금','토'],
             calYearMonth:(y,m)=>`${y}년 ${m+1}월 달력`,
             calWeekLabel:(y,m,w)=>`${y}년 ${m+1}월 ${w}주차`,
@@ -157,6 +160,9 @@ const app = {
             spellCancel:'Cancel', spellApply:'Apply This Version!',
             spellDone:'Correction ready — please review', spellCancelled:'Spell-check cancelled.',
             spellApplied:'Successfully applied and saved to editor', spellError:'Error during spell-check (please retry)',
+            calAuthError: 'Insufficient Google Calendar permissions. Would you like to re-login and grant [Calendar Management] permission?',
+            calAuthSuccess: 'Google Calendar permissions granted successfully!',
+            calAuthDenied: 'Permission denied. Granting permission is required to use calendar features.',
             calDays:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
             calYearMonth:(y,m)=>{const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return `${M[m]} ${y}`;},
             calWeekLabel:(y,m,w)=>{const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return `${M[m]} ${y} – Week ${w}`;},
@@ -431,7 +437,7 @@ const app = {
             options: {
                 redirectTo: window.location.origin,
                 scopes: 'https://www.googleapis.com/auth/calendar',
-                queryParams: { access_type: 'offline' }
+                queryParams: { access_type: 'offline', prompt: 'consent' }
             }
         });
         if (error) console.error('Login Error:', error.message);
@@ -471,7 +477,11 @@ const app = {
         try {
             const data = await callEdgeFunction('calendar-event', { operation: 'create', job, refreshToken });
             if (data.error) {
-                if (data.error.includes('invalid_grant')) { this.notifyCalendarReloginNeeded(); return null; }
+                const errStr = String(data.error).toLowerCase();
+                if (errStr.includes('invalid_grant') || errStr.includes('insufficient') || errStr.includes('403')) {
+                    this.notifyCalendarReloginNeeded();
+                    return null;
+                }
                 console.error('Calendar create error from function:', data.error);
                 return null;
             }
@@ -489,12 +499,17 @@ const app = {
         if (!refreshToken) { console.warn('Calendar: refresh_token 없음, 재로그인 필요'); return; }
         try {
             const data = await callEdgeFunction('calendar-event', { operation: 'update', job, refreshToken, eventId: job.googleEventId });
-            if (data?.error?.includes('invalid_grant')) { this.notifyCalendarReloginNeeded(); }
+            if (data?.error) {
+                const errStr = String(data.error).toLowerCase();
+                if (errStr.includes('invalid_grant') || errStr.includes('insufficient') || errStr.includes('403')) {
+                    this.notifyCalendarReloginNeeded();
+                }
+            }
         } catch (e) { console.error('Calendar update error:', e); }
     },
 
     notifyCalendarReloginNeeded() {
-        if (confirm('구글 캘린더 연동이 만료되었습니다.\n재연동하시겠습니까? (재로그인이 필요합니다)')) {
+        if (confirm(this.t('calAuthError'))) {
             this.reloginForCalendar();
         }
     },
