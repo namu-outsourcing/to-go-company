@@ -998,7 +998,7 @@ const app = {
         editContainer.innerHTML = `
             <div style="margin-bottom:1rem;"><label style="font-size:0.9rem;font-weight:600;display:block;margin-bottom:0.3rem;">${this.t('editCompany')}</label><input type="text" id="edit-m-company" value="${job.company}" style="width:100%; border:1px solid var(--border-color); padding:0.8rem; border-radius:6px;"></div>
             <div style="margin-bottom:1rem;"><label style="font-size:0.9rem;font-weight:600;display:block;margin-bottom:0.3rem;">${this.t('editRole')}</label><input type="text" id="edit-m-role" value="${job.role}" style="width:100%; border:1px solid var(--border-color); padding:0.8rem; border-radius:6px;"></div>
-            <div style="margin-bottom:1rem;"><label style="font-size:0.9rem;font-weight:600;display:block;margin-bottom:0.3rem;">${this.t('editUrl')}</label><input type="url" id="edit-m-url" value="${job.url || ''}" placeholder="https://..." style="width:100%; border:1px solid var(--border-color); padding:0.8rem; border-radius:6px;"></div>
+            <div style="margin-bottom:1rem;"><label style="font-size:0.9rem;font-weight:600;display:block;margin-bottom:0.3rem;">${this.t('editUrl')}</label><input type="url" id="edit-m-url" value="${job.sourceUrl || ''}" placeholder="https://..." style="width:100%; border:1px solid var(--border-color); padding:0.8rem; border-radius:6px;"></div>
             <div style="margin-bottom:1rem;"><label style="font-size:0.9rem;font-weight:600;display:block;margin-bottom:0.3rem;">${this.t('editDeadline')}</label><input type="date" id="edit-m-deadline" value="${job.deadline === '상시모집' ? '' : job.deadline}" style="width:100%; border:1px solid var(--border-color); padding:0.8rem; border-radius:6px;"></div>
             <div style="margin-bottom:1rem; padding:1rem; border:1px solid var(--border-color); border-radius:8px; background:#f8fafc;"><label style="font-size:1rem;color:var(--primary);display:block;font-weight:700;margin-bottom:0.8rem;">${this.t('editQSection')}</label>${qInputs}<button class="btn-sm" onclick="app.addEmptyQuestionInput()" style="margin-top:0.5rem; background:#eff6ff; color:var(--primary); font-weight:600;">${this.t('editAddQ')}</button></div>
             <button class="btn-primary" style="width:100%; margin-top:1.5rem; justify-content:center; padding:1.2rem;" onclick="app.saveEditedJobModal()">${this.t('editSave')}</button>
@@ -1019,7 +1019,7 @@ const app = {
         if (!job) return;
         job.company = document.getElementById('edit-m-company').value.trim();
         job.role = document.getElementById('edit-m-role').value.trim();
-        job.url = document.getElementById('edit-m-url').value.trim();
+        job.sourceUrl = document.getElementById('edit-m-url').value.trim();
         const dl = document.getElementById('edit-m-deadline').value;
         job.deadline = dl ? dl : "상시모집";
 
