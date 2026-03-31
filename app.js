@@ -704,18 +704,25 @@ const app = {
         }
 
         const qList = document.getElementById('p-questions'); qList.innerHTML = '';
-        if (parsed.questions && parsed.questions.length > 0) {
-            parsed.questions.forEach(q => {
-                const div = document.createElement('div');
-                div.className = 'q-badge';
-                div.contentEditable = 'true';
-                div.style.cssText = 'cursor:text; border:1px solid #cbd5e1';
-                div.textContent = q;
-                qList.appendChild(div);
-            });
-        } else {
-            qList.innerHTML = '<div class="q-badge empty-q" contenteditable="true" data-placeholder="직접 문항을 입력해주세요." style="cursor:text; border:1px solid #cbd5e1"></div>';
+        let questions = parsed.questions || [];
+        
+        // Ensure at least 3 input fields
+        while (questions.length < 3) {
+            questions.push('');
         }
+
+        questions.forEach(q => {
+            const div = document.createElement('div');
+            div.className = 'q-badge';
+            div.contentEditable = 'true';
+            div.style.cssText = 'cursor:text; border:1px solid #cbd5e1; min-height:48px; padding:0.8rem; margin-bottom:0.5rem; display:flex; align-items:center;';
+            div.textContent = q;
+            if (!q) {
+                div.classList.add('empty-q');
+                div.setAttribute('data-placeholder', this.lang === 'ko' ? '직접 문항을 입력해주세요.' : 'Enter question text manually...');
+            }
+            qList.appendChild(div);
+        });
         this.tempParsedSourceUrl = parsed.sourceUrl || "";
     },
 
