@@ -360,6 +360,8 @@ const app = {
         this.state.session = session ?? null;
         this.updateAuthUI();
 
+        let isInitialized = false;
+
         supabase.auth.onAuthStateChange(async (_event, session) => {
             this.state.user = session?.user ?? null;
             this.state.session = session ?? null;
@@ -367,14 +369,21 @@ const app = {
             if (this.state.user) {
                 this.hideLoginWall();
                 if (_event === 'SIGNED_IN' || _event === 'INITIAL_SESSION') {
-                    if (session?.provider_refresh_token) {
+                    if (!isInitialized) {
+                        isInitialized = true;
+                        if (session?.provider_refresh_token) {
+                            try { await this.saveGoogleRefreshToken(session.provider_refresh_token); }
+                            catch (e) { console.error('saveGoogleRefreshToken error:', e); }
+                        }
+                        await this.loadFromSupabase();
+                        this._initUI();
+                    } else if (session?.provider_refresh_token) {
                         try { await this.saveGoogleRefreshToken(session.provider_refresh_token); }
                         catch (e) { console.error('saveGoogleRefreshToken error:', e); }
                     }
-                    await this.loadFromSupabase();
-                    this._initUI();
                 }
             } else {
+                isInitialized = false;
                 this.state.jobs = [];
                 this.state.googleRefreshToken = null;
                 this.showLoginWall();
