@@ -81,7 +81,7 @@ const app = {
             archiveNoData:'보관된 내역이 없습니다.', archiveReuse:'자소서 열람 (재활용하기)',
             archiveStatusChange:'상태 변경 (대시보드 복구)', archiveTodo:'지원 준비중으로 변경',
             archiveApplied:'지원 완료로 변경', archiveFailKeep:'불합격 유지', archivePassKeep:'합격 유지',
-            editCompany:'기업명', editRole:'직무', editDeadline:'마감일 (상시모집 시 비워주세요)',
+            editCompany:'기업명', editRole:'직무', editDeadline:'마감일 (상시모집 시 비워주세요)', editUrl:'공고 원문 링크(URL)',
             editQLabel:'번 문항:', editQSection:'자소서 문항 관리', editAddQ:'+ 새 문항 추가', editSave:'수정내용 저장',
             autoSaveAlert:'데이터 변경 시 로컬 스토리지에 100% 안전하게 자동 저장됩니다!',
             termsAll:'전체 동의',
@@ -138,7 +138,7 @@ const app = {
             archiveNoData:'No archived applications yet.', archiveReuse:'View Essay (Reuse)',
             archiveStatusChange:'Change Status (Restore)', archiveTodo:'Move to Preparing',
             archiveApplied:'Move to Applied', archiveFailKeep:'Keep as Rejected', archivePassKeep:'Keep as Accepted',
-            editCompany:'Company', editRole:'Role', editDeadline:'Deadline (leave blank if always open)',
+            editCompany:'Company', editRole:'Role', editDeadline:'Deadline (leave blank if always open)', editUrl:'Job Posting URL',
             editQLabel:' Question:', editQSection:'Essay Question Management', editAddQ:'+ Add Question', editSave:'Save Changes',
             autoSaveAlert:'All changes are auto-saved 100% safely to local storage!',
             termsAll:'Agree to All',
@@ -998,6 +998,7 @@ const app = {
         editContainer.innerHTML = `
             <div style="margin-bottom:1rem;"><label style="font-size:0.9rem;font-weight:600;display:block;margin-bottom:0.3rem;">${this.t('editCompany')}</label><input type="text" id="edit-m-company" value="${job.company}" style="width:100%; border:1px solid var(--border-color); padding:0.8rem; border-radius:6px;"></div>
             <div style="margin-bottom:1rem;"><label style="font-size:0.9rem;font-weight:600;display:block;margin-bottom:0.3rem;">${this.t('editRole')}</label><input type="text" id="edit-m-role" value="${job.role}" style="width:100%; border:1px solid var(--border-color); padding:0.8rem; border-radius:6px;"></div>
+            <div style="margin-bottom:1rem;"><label style="font-size:0.9rem;font-weight:600;display:block;margin-bottom:0.3rem;">${this.t('editUrl')}</label><input type="url" id="edit-m-url" value="${job.url || ''}" placeholder="https://..." style="width:100%; border:1px solid var(--border-color); padding:0.8rem; border-radius:6px;"></div>
             <div style="margin-bottom:1rem;"><label style="font-size:0.9rem;font-weight:600;display:block;margin-bottom:0.3rem;">${this.t('editDeadline')}</label><input type="date" id="edit-m-deadline" value="${job.deadline === '상시모집' ? '' : job.deadline}" style="width:100%; border:1px solid var(--border-color); padding:0.8rem; border-radius:6px;"></div>
             <div style="margin-bottom:1rem; padding:1rem; border:1px solid var(--border-color); border-radius:8px; background:#f8fafc;"><label style="font-size:1rem;color:var(--primary);display:block;font-weight:700;margin-bottom:0.8rem;">${this.t('editQSection')}</label>${qInputs}<button class="btn-sm" onclick="app.addEmptyQuestionInput()" style="margin-top:0.5rem; background:#eff6ff; color:var(--primary); font-weight:600;">${this.t('editAddQ')}</button></div>
             <button class="btn-primary" style="width:100%; margin-top:1.5rem; justify-content:center; padding:1.2rem;" onclick="app.saveEditedJobModal()">${this.t('editSave')}</button>
@@ -1018,6 +1019,7 @@ const app = {
         if (!job) return;
         job.company = document.getElementById('edit-m-company').value.trim();
         job.role = document.getElementById('edit-m-role').value.trim();
+        job.url = document.getElementById('edit-m-url').value.trim();
         const dl = document.getElementById('edit-m-deadline').value;
         job.deadline = dl ? dl : "상시모집";
 
