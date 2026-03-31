@@ -1132,16 +1132,51 @@ const app = {
 
     renderEditorQuestions(job) {
         const qList = document.querySelector('.q-list'); qList.innerHTML = '';
-        if (!job.questions || job.questions.length === 0) { qList.innerHTML = `<div class="q-item active" style="white-space:normal; word-break:keep-all;">${this.lang === 'ko' ? '문항이 없습니다.' : 'No questions.'}</div>`; return; }
-        job.questions.forEach((q, idx) => {
-            const div = document.createElement('div');
-            div.className = `q-item ${idx === 0 ? 'active' : ''}`;
-            div.dataset.idx = idx;
-            div.style.cssText = 'white-space:normal; word-break:keep-all;';
-            div.textContent = `${idx + 1}. ${q}`;
-            div.onclick = () => app.loadEditorQuestion(idx);
-            qList.appendChild(div);
-        });
+        
+        // Render existing questions
+        if (job.questions && job.questions.length > 0) {
+            job.questions.forEach((q, idx) => {
+                const div = document.createElement('div');
+                div.className = `q-item ${idx === this.state.editorActiveQIndex ? 'active' : ''}`;
+                div.dataset.idx = idx;
+                div.style.cssText = 'white-space:normal; word-break:keep-all;';
+                div.textContent = `${idx + 1}. ${q || (this.lang === 'ko' ? '새 문항' : 'New Question')}`;
+                div.onclick = () => app.loadEditorQuestion(idx);
+                qList.appendChild(div);
+            });
+        }
+
+        // Add "Add New Question" button at the bottom
+        const addBtn = document.createElement('button');
+        addBtn.className = 'btn-sm';
+        addBtn.style.cssText = 'width:100%; margin-top:0.8rem; background:#eff6ff; color:var(--primary); font-weight:700; border:1px dashed var(--primary); padding:0.8rem; border-radius:8px;';
+        addBtn.innerHTML = `<span class="material-symbols-rounded" style="font-size:1.1rem; vertical-align:middle; margin-right:4px;">add_circle</span> ${this.t('editAddQ')}`;
+        addBtn.onclick = () => app.addEditorQuestion();
+        qList.appendChild(addBtn);
+    },
+
+    addEditorQuestion() {
+        const job = this.state.jobs.find(j => j.id === this.state.editorJobId);
+        if (!job) return;
+        if (!job.questions) job.questions = [];
+        if (!job.answers) job.answers = [];
+        
+        job.questions.push('');
+        job.answers.push('');
+        
+        const newIdx = job.questions.length - 1;
+        this.state.editorActiveQIndex = newIdx;
+        
+        this.saveStorage();
+        this.renderEditorQuestions(job);
+        this.loadEditorQuestion(newIdx);
+        
+        // Focus on the title field for the new question
+        const titleInput = document.getElementById('current-q-title');
+        if (titleInput) {
+            titleInput.focus();
+            titleInput.placeholder = this.lang === 'ko' ? '문항 내용을 입력하세요...' : 'Enter question text...';
+        }
     },
 
     loadEditorQuestion(idx) {
@@ -1153,7 +1188,26 @@ const app = {
         const activeItem = document.querySelector(`.q-item[data-idx="${idx}"]`);
         if (activeItem) activeItem.classList.add('active');
 
-        document.getElementById('current-q-title').innerText = `${idx + 1}. ${job.questions[idx] || (this.lang === 'ko' ? '문항 정보 없음' : 'No question info')}`;
+        const titleInput = document.getElementById('current-q-title');
+        titleInput.value = job.questions[idx] || '';
+        
+        // Auto-resize title textarea
+        titleInput.style.height = 'auto';
+        titleInput.style.height = (titleInput.scrollHeight) + 'px';
+        
+        // Single listener for title updates
+        titleInput.oninput = (e) => {
+            job.questions[idx] = e.target.value;
+            titleInput.style.height = 'auto';
+            titleInput.style.height = (titleInput.scrollHeight) + 'px';
+            
+            // Update the sidebar text live
+            const qItem = document.querySelector(`.q-item[data-idx="${idx}"]`);
+            if (qItem) qItem.textContent = `${idx + 1}. ${e.target.value || (this.lang === 'ko' ? '새 문항' : 'New Question')}`;
+            
+            this.saveStorage();
+        };
+
         const essayInput = document.getElementById('essay-input');
         const val = (job.answers && job.answers[idx]) ? job.answers[idx] : '';
         essayInput.value = val;

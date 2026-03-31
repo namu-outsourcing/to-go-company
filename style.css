@@ -109,7 +109,11 @@ input:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3p
 .q-item:hover { background: #f8fafc; border-color: #cbd5e1; color: var(--text-main); }
 .q-item.active { background: #eff6ff; border-color: var(--primary); color: var(--primary); font-weight: 600; box-shadow: 0 2px 4px rgba(37,99,235,0.05); }
 .editor-area { flex: 1; display: flex; flex-direction: column; }
-.editor-area h3 { font-size: 1.2rem; line-height: 1.5; margin-bottom: 1rem; color: var(--text-main); font-weight:700;}
+#current-q-title:focus {
+    border-bottom: 2px solid var(--primary) !important;
+    padding-bottom: 4px !important;
+    transition: all 0.2s ease;
+}
 textarea { flex: 1; resize: none; margin-bottom: 1rem; font-size: 1.05rem; line-height: 1.7; padding: 1.5rem; }
 .editor-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; border-top: 1px solid var(--border-color); }
 .spell-check-status { display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; font-weight: 600; }
