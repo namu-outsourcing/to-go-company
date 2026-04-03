@@ -373,6 +373,88 @@ input:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3p
         font-size: 0.85rem;
     }
 
+    /* Editor View Mobile Fixes */
+    #view-editor header {
+        flex-wrap: wrap;
+        gap: 0.8rem;
+    }
+    #view-editor header > div:last-child {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    .company-selector-wrapper {
+        max-width: 180px;
+    }
+    #view-editor .btn-secondary {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.85rem;
+        height: 40px;
+    }
+    #view-editor .btn-secondary span.material-symbols-rounded {
+        font-size: 1.2rem;
+    }
+    #view-editor .btn-secondary span:not(.material-symbols-rounded) {
+        display: inline-block; /* Fix vertical text issue */
+        white-space: nowrap;
+    }
+
+    .editor-layout {
+        flex-direction: column;
+        height: auto;
+        gap: 0.8rem;
+    }
+    .q-sidebar {
+        width: 100%;
+        max-height: 150px;
+        border-radius: 12px;
+    }
+    .q-sidebar-header {
+        padding: 0.8rem 1.2rem;
+    }
+    .q-list {
+        padding: 0.5rem;
+    }
+    .q-item {
+        padding: 0.6rem 1rem;
+    }
+
+    .editor-area {
+        padding: 1.2rem !important;
+        min-height: calc(100vh - 420px); /* Fill more space */
+        border-radius: 12px;
+    }
+    .q-title-section {
+        margin-bottom: 0.8rem;
+        padding-bottom: 0.8rem;
+    }
+    #current-q-title {
+        font-size: 1rem;
+    }
+    .essay-wrapper {
+        min-height: 250px;
+    }
+    #essay-input {
+        font-size: 1rem;
+        line-height: 1.6;
+        min-height: 250px;
+    }
+    .editor-footer {
+        flex-direction: column;
+        gap: 0.8rem;
+        align-items: stretch;
+    }
+    .editor-footer > div:last-child {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    #spell-check-status {
+        font-size: 0.85rem;
+    }
+    .char-count {
+        font-size: 0.85rem;
+    }
+
     .dashboard-layout {
         gap: 1rem;
     }
