@@ -246,13 +246,13 @@ input:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3p
 .tutorial-bubble.mobile-bubble::before {
     border-right-color: transparent;
     border-top-color: var(--primary);
-    left: 50%; top: auto; bottom: -22px;
+    left: var(--arrow-left, 50%); top: auto; bottom: -22px;
     transform: translateX(-50%);
 }
 .tutorial-bubble.mobile-bubble::after {
     border-right-color: transparent;
     border-top-color: #fff;
-    left: 50%; top: auto; bottom: -20px;
+    left: var(--arrow-left, 50%); top: auto; bottom: -20px;
     transform: translateX(-50%);
 }
 

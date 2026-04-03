@@ -1444,6 +1444,11 @@ const app = {
                     // Constrain to screen edges
                     leftPos = Math.max(10, Math.min(screenWidth - bubbleWidth - 10, leftPos));
                     bubble.style.left = leftPos + 'px';
+
+                    // Calculate arrow position (relative to bubble)
+                    const targetCenter = rect.left + (rect.width / 2);
+                    const arrowPos = targetCenter - leftPos;
+                    bubble.style.setProperty('--arrow-left', arrowPos + 'px');
                 } else {
                     bubble.classList.remove('mobile-bubble');
                     bubble.style.width = '300px';
