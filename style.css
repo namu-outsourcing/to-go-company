@@ -242,6 +242,20 @@ input:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3p
     left: -18px; top: 21px;
 }
 
+/* Mobile Tutorial Arrow Adjustments */
+.tutorial-bubble.mobile-bubble::before {
+    border-right-color: transparent;
+    border-top-color: var(--primary);
+    left: 50%; top: auto; bottom: -22px;
+    transform: translateX(-50%);
+}
+.tutorial-bubble.mobile-bubble::after {
+    border-right-color: transparent;
+    border-top-color: #fff;
+    left: 50%; top: auto; bottom: -18px;
+    transform: translateX(-50%);
+}
+
 /* ── Language Toggle ── */
 .lang-toggle-wrap {
     display: flex;

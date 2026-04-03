@@ -1425,8 +1425,17 @@ const app = {
             const nextBtn = document.getElementById('tutorial-next-btn');
             if (textEl) textEl.innerText = step.text;
             if (bubble) {
-                bubble.style.top = Math.max(10, rect.top - 10) + 'px';
-                bubble.style.left = (rect.right + 25) + 'px';
+                const isMobile = window.innerWidth <= 768;
+                if (isMobile) {
+                    // On mobile, items are in bottom nav. Show bubble ABOVE the target.
+                    bubble.style.top = (rect.top - bubble.offsetHeight - 20) + 'px';
+                    bubble.style.left = Math.max(10, Math.min(window.innerWidth - 310, rect.left + (rect.width / 2) - 150)) + 'px';
+                    bubble.classList.add('mobile-bubble');
+                } else {
+                    bubble.style.top = Math.max(10, rect.top - 10) + 'px';
+                    bubble.style.left = (rect.right + 25) + 'px';
+                    bubble.classList.remove('mobile-bubble');
+                }
             }
             if (nextBtn) {
                 nextBtn.innerText = this.currentTutorialStep === this.tutorialSteps.length - 1 ? this.t('tutDone') : this.t('tutNext');
