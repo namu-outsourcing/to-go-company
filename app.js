@@ -1425,16 +1425,31 @@ const app = {
             const nextBtn = document.getElementById('tutorial-next-btn');
             if (textEl) textEl.innerText = step.text;
             if (bubble) {
-                const isMobile = window.innerWidth <= 768;
+                const isMobile = window.matchMedia('(max-width: 768px)').matches;
                 if (isMobile) {
                     // On mobile, items are in bottom nav. Show bubble ABOVE the target.
-                    bubble.style.top = (rect.top - bubble.offsetHeight - 20) + 'px';
-                    bubble.style.left = Math.max(10, Math.min(window.innerWidth - 310, rect.left + (rect.width / 2) - 150)) + 'px';
                     bubble.classList.add('mobile-bubble');
+                    // Reset mobile styles first to get correct height
+                    bubble.style.width = 'calc(100vw - 40px)';
+                    bubble.style.maxWidth = '340px';
+                    
+                    const bubbleHeight = bubble.offsetHeight || 120; // fallback if hidden
+                    bubble.style.top = (rect.top - bubbleHeight - 20) + 'px';
+                    
+                    // Center bubble horizontally relative to screen, keeping it within bounds
+                    const screenWidth = window.innerWidth;
+                    const bubbleWidth = Math.min(screenWidth - 40, 340);
+                    let leftPos = rect.left + (rect.width / 2) - (bubbleWidth / 2);
+                    
+                    // Constrain to screen edges
+                    leftPos = Math.max(10, Math.min(screenWidth - bubbleWidth - 10, leftPos));
+                    bubble.style.left = leftPos + 'px';
                 } else {
+                    bubble.classList.remove('mobile-bubble');
+                    bubble.style.width = '300px';
+                    bubble.style.maxWidth = '';
                     bubble.style.top = Math.max(10, rect.top - 10) + 'px';
                     bubble.style.left = (rect.right + 25) + 'px';
-                    bubble.classList.remove('mobile-bubble');
                 }
             }
             if (nextBtn) {
